@@ -251,8 +251,8 @@ test("About ends with the relocated connect section", async ({ page }) => {
   await connect.scrollIntoViewIfNeeded()
   await expect(connect).toBeVisible()
   await expect(page.getByRole("link", { name: "Email", exact: true })).toHaveAttribute("href", "mailto:dhwani0321@gmail.com")
-  await expect(page.getByRole("link", { name: "LinkedIn ↗", exact: true })).toHaveAttribute("href", "https://www.linkedin.com/in/dhwanishahh")
-  await expect(page.getByRole("link", { name: "Instagram ↗", exact: true })).toHaveAttribute("href", "https://www.instagram.com/dhwani.dwg/")
+  await expect(page.getByRole("link", { name: "LinkedIn", exact: true })).toHaveAttribute("href", "https://www.linkedin.com/in/dhwanishahh")
+  await expect(page.getByRole("link", { name: "Instagram", exact: true })).toHaveAttribute("href", "https://www.instagram.com/dhwani.dwg/")
   await expect(connect.getByRole("link", { name: /Resume/ })).toHaveCount(0)
   await expect(connect.locator(".about-connect-meta time")).toContainText("My local time —")
   await expect(connect.locator(".about-connect-meta span")).toHaveText("© 2025 Dhwani Shah")
@@ -310,10 +310,21 @@ test("mobile navigation opens and exposes its links", async ({ page }) => {
   await expect(page.getByRole("link", { name: "About", exact: true }).last()).toBeVisible()
   await expect(page.getByRole("link", { name: "Resume", exact: true }).last()).toBeVisible()
   const openMenu = mobileHeader.locator('[data-framer-name="Phone"]')
-  expect(await openMenu.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toContain("blur")
+  await expect(openMenu).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
+  const menuLinks = openMenu.locator(".framer-1v617ec")
+  await expect(menuLinks).toHaveCSS("background-color", "rgba(30, 90, 180, 0.22)")
+  expect(await menuLinks.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toContain("blur")
   const openMenuBox = await openMenu.boundingBox()
+  const menuLinksBox = await menuLinks.boundingBox()
   const projectLinkBox = await openMenu.getByRole("link", { name: "Projects", exact: true }).boundingBox()
-  expect(Math.abs(projectLinkBox.x + projectLinkBox.width - (openMenuBox.x + openMenuBox.width))).toBeLessThan(3)
+  expect(Math.abs(menuLinksBox.x + menuLinksBox.width - (openMenuBox.x + openMenuBox.width))).toBeLessThan(1)
+  expect(menuLinksBox.x + menuLinksBox.width - (projectLinkBox.x + projectLinkBox.width)).toBeLessThanOrEqual(13)
+  expect(menuLinksBox.width).toBeLessThan(100)
+
+  await openMenu.getByRole("link", { name: "Projects", exact: true }).click()
+  await expect(page).toHaveURL(/\/#projects$/)
+  await expect(openMenu).toHaveCount(0)
+  await expect.poll(() => page.locator("#projects").evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
 })
 
 test("mobile homepage keeps desktop-style panel scrolling and project animation", async ({ page }) => {
@@ -321,7 +332,7 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   await page.goto("/")
 
   await expect(page.locator('[data-framer-name="section header"]')).toBeHidden()
-  await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "y mandatory")
+  await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "none")
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
@@ -360,4 +371,16 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
   }))
   expect(new Set(layout.children.map(box => Math.round(box.top))).size).toBe(1)
   expect(layout.children.at(-1).right).toBeLessThanOrEqual(layout.container.right + 1)
+  const certification = page.locator(".framer-1d1zcd5:visible")
+  await expect(certification).toBeVisible()
+  await expect.poll(() => page.evaluate(() => {
+    const certification = [...document.querySelectorAll(".framer-1d1zcd5")]
+      .find(element => getComputedStyle(element).display !== "none")
+    const flaps = document.querySelector(".about-connect-flaps")
+    if (!certification || !flaps) return false
+    const gap = flaps.getBoundingClientRect().top - certification.getBoundingClientRect().bottom
+    return gap >= 20 && gap <= 40
+  })).toBe(true)
+  await expect(page.getByRole("link", { name: "LinkedIn", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
+  await expect(page.getByRole("link", { name: "Instagram", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
 })

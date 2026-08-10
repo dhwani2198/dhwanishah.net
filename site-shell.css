@@ -121,6 +121,24 @@ body:not(.site-home) .site-nav-shell {
 }
 
 .about-connect-actions a:not(.about-connect-email) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.about-external-icon {
+    width: 10px;
+    height: 10px;
+    flex: none;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.15;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+}
+
+.about-connect-actions a:not(.about-connect-email) {
     color: #aaa;
     transition: color .2s ease;
 }
@@ -161,7 +179,12 @@ body:not(.site-home) .site-nav-shell {
 .about-connect-meta span { white-space: nowrap; }
 
 @media (max-width: 809.98px) {
-    .about-connect { min-height: 420px; padding: 72px 0; }
+    .framer-AStPX .about-connect {
+        min-height: 340px;
+        padding: 24px 0 68px;
+        justify-content: flex-start;
+        gap: 28px;
+    }
     .about-connect-flaps {
         width: 100%;
         flex-wrap: nowrap;
@@ -303,7 +326,11 @@ body.site-home { overscroll-behavior-y: contain; }
     .portfolio-meta-footer { font-size: 11px; }
     .project-progress { gap: 8px; }
 
-    html.site-home { scroll-snap-type: y mandatory !important; }
+    html.site-home { scroll-snap-type: none !important; }
+    body.site-home {
+        overscroll-behavior-y: auto;
+        touch-action: pan-y;
+    }
 
     .framer-Rkf84 [data-framer-name="section header"] {
         display: none !important;
@@ -312,8 +339,8 @@ body.site-home { overscroll-behavior-y: contain; }
     html.site-home .framer-Rkf84 .framer-1cf70bh {
         height: 100dvh !important;
         min-height: 100dvh !important;
-        scroll-snap-align: start !important;
-        scroll-snap-stop: always !important;
+        scroll-snap-align: none !important;
+        scroll-snap-stop: normal !important;
     }
 
     html.site-home .project-scroll-panel {
@@ -324,8 +351,8 @@ body.site-home { overscroll-behavior-y: contain; }
         gap: 24px !important;
         justify-content: center !important;
         overflow: visible !important;
-        scroll-snap-align: start !important;
-        scroll-snap-stop: always !important;
+        scroll-snap-align: none !important;
+        scroll-snap-stop: normal !important;
         opacity: 0 !important;
         transform: translateY(28px) !important;
         transition: opacity .45s ease-out, transform .55s cubic-bezier(.22, 1, .36, 1) !important;
@@ -389,26 +416,40 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] {
-        border: 1px solid rgba(255, 255, 255, .1);
-        border-radius: 18px;
-        background: rgba(8, 8, 8, .58) !important;
-        box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
-        backdrop-filter: blur(20px) saturate(140%) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
-        overflow: hidden !important;
+        border: 0;
+        border-radius: 0;
+        background: transparent !important;
+        box-shadow: none;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        overflow: visible !important;
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec {
         align-items: flex-end !important;
-        width: 100% !important;
+        align-self: flex-end !important;
+        width: max-content !important;
         max-width: none !important;
-        padding-right: 0 !important;
+        margin-left: auto !important;
+        padding: 10px 12px 12px !important;
+        gap: 16px !important;
+        height: auto !important;
+        justify-content: flex-start !important;
+        border-radius: 14px;
+        background: rgba(30, 90, 180, .22);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, .2);
+        backdrop-filter: blur(14px) saturate(125%);
+        -webkit-backdrop-filter: blur(14px) saturate(125%);
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec [data-framer-component-type="RichTextContainer"],
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec .framer-text {
         width: 100% !important;
         text-align: right !important;
+    }
+
+    .framer-AStPX .framer-1wfbg45 {
+        display: none !important;
     }
 }
 

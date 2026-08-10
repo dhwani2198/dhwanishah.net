@@ -20,7 +20,9 @@
         const projects = document.getElementById("projects")
         if (!projects) return false
 
-        const top = Math.max(0, projects.getBoundingClientRect().top + window.scrollY)
+        let top = 0
+        for (let element = projects; element; element = element.offsetParent) top += element.offsetTop
+        top = Math.max(0, top)
         const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
         try {
             window.scrollTo({ top, left: 0, behavior })
@@ -45,7 +47,22 @@
             location.assign("/#projects")
             return
         }
-        scrollToProjects()
+        const closeMenu = document.querySelector('.site-nav-shell [data-framer-name="close"]')
+        if (closeMenu) {
+            for (const type of ["pointerdown", "pointerup", "click"]) {
+                closeMenu.dispatchEvent(new PointerEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    pointerId: 1,
+                    pointerType: "touch",
+                    isPrimary: true,
+                    button: 0,
+                }))
+            }
+            requestAnimationFrame(() => requestAnimationFrame(() => scrollToProjects()))
+        } else {
+            scrollToProjects()
+        }
     }
 
     const homePanelObserver = new IntersectionObserver(entries => {
@@ -159,11 +176,11 @@
         const actions = document.createElement("div")
         actions.className = "about-connect-actions"
         const links = [
-            ["Email", "mailto:dhwani0321@gmail.com", "about-connect-email"],
-            ["LinkedIn ↗", "https://www.linkedin.com/in/dhwanishahh"],
-            ["Instagram ↗", "https://www.instagram.com/dhwani.dwg/"],
+            ["Email", "mailto:dhwani0321@gmail.com", "about-connect-email", false],
+            ["LinkedIn", "https://www.linkedin.com/in/dhwanishahh", "", true],
+            ["Instagram", "https://www.instagram.com/dhwani.dwg/", "", true],
         ]
-        for (const [label, href, className] of links) {
+        for (const [label, href, className, external] of links) {
             const link = document.createElement("a")
             link.href = href
             if (className) link.className = className
@@ -172,6 +189,16 @@
                 link.rel = "noopener noreferrer"
             }
             link.textContent = label
+            if (external) {
+                const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+                icon.classList.add("about-external-icon")
+                icon.setAttribute("viewBox", "0 0 10 10")
+                icon.setAttribute("aria-hidden", "true")
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path")
+                path.setAttribute("d", "M2 8 8 2M3 2h5v5")
+                icon.appendChild(path)
+                link.appendChild(icon)
+            }
             actions.appendChild(link)
         }
         const meta = document.createElement("div")

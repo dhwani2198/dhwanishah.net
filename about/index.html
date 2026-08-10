@@ -539,8 +539,9 @@
                 sound.play().catch(() => {})
             }
 
-            function buildConnectSection() {
-                document.querySelectorAll("a").forEach(link => {
+	            function buildConnectSection() {
+	                if (document.querySelector('script[src="/site-shell.js"]')) return
+	                document.querySelectorAll("a").forEach(link => {
                     if (link.textContent.trim().toLowerCase() !== "case studies") return
                     link.textContent = "Project"
                     link.setAttribute("href", "/#projects")
