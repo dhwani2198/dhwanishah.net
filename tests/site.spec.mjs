@@ -319,7 +319,11 @@ test("mobile navigation opens and exposes its links", async ({ page }) => {
   const projectLinkBox = await openMenu.getByRole("link", { name: "Projects", exact: true }).boundingBox()
   expect(Math.abs(menuLinksBox.x + menuLinksBox.width - (openMenuBox.x + openMenuBox.width))).toBeLessThan(1)
   expect(menuLinksBox.x + menuLinksBox.width - (projectLinkBox.x + projectLinkBox.width)).toBeLessThanOrEqual(13)
-  expect(menuLinksBox.width).toBeLessThan(100)
+  expect(menuLinksBox.width).toBeGreaterThanOrEqual(140)
+  expect(menuLinksBox.width).toBeLessThanOrEqual(142)
+  for (const option of await menuLinks.locator('[data-framer-component-type="RichTextContainer"]').all()) {
+    expect((await option.boundingBox()).height).toBeGreaterThanOrEqual(43.9)
+  }
 
   await openMenu.getByRole("link", { name: "Projects", exact: true }).click()
   await expect(page).toHaveURL(/\/#projects$/)
@@ -361,6 +365,24 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
       expect(box.top).toBeGreaterThanOrEqual(layout.children[index].bottom - 1)
     })
     expect(layout.children.at(-1).bottom).toBeLessThanOrEqual(layout.panel.bottom + 1)
+  }
+
+  const homePanelBox = await panels.first().boundingBox()
+  const homeMediaBox = await panels.first().locator(":scope > *").first().boundingBox()
+  const homeTitleBox = await panels.first().getByText("TALLY", { exact: true }).first().boundingBox()
+  await page.goto("/about")
+  const aboutBox = await page.locator(".framer-1vz9cvd").boundingBox()
+  await page.goto("/tally")
+  const caseStudyBox = await page.locator('[data-framer-name="VR Dashboard"]').first().boundingBox()
+  for (const box of [homePanelBox, homeMediaBox, aboutBox, caseStudyBox]) {
+    expect(Math.abs(box.x - 20)).toBeLessThanOrEqual(2)
+    expect(Math.abs(box.x + box.width - 370)).toBeLessThanOrEqual(2)
+  }
+  expect(Math.abs(homeTitleBox.x - 20)).toBeLessThanOrEqual(2)
+
+  await page.goto("/")
+  for (const image of await page.locator(".project-scroll-panel img").all()) {
+    await expect(image).toHaveCSS("object-fit", "contain")
   }
 })
 
