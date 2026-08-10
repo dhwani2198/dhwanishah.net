@@ -113,6 +113,21 @@ test("homepage presents projects as full-screen scroll panels", async ({ page })
   }
 })
 
+test("Projects navigation reaches the first project section", async ({ page }) => {
+  await page.goto("/")
+  const projectsLink = page.getByRole("link", { name: "Projects", exact: true }).first()
+  const firstProject = page.locator("#projects")
+
+  await projectsLink.click()
+  await expect(page).toHaveURL(/\/#projects$/)
+  await expect.poll(() => firstProject.evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
+
+  await page.goto("/about")
+  await page.getByRole("link", { name: "Projects", exact: true }).first().click()
+  await expect(page).toHaveURL(/\/#projects$/)
+  await expect.poll(() => page.locator("#projects").evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
+})
+
 test("homepage split-flap animation stays centered at every breakpoint", async ({ page }) => {
   for (const viewport of [
     { width: 1440, height: 1000 },

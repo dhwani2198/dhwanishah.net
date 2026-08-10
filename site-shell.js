@@ -10,6 +10,43 @@
     let flapSoundPool
     let lastFlapSoundAt = 0
     let scheduled = false
+    let projectHashHandled = false
+
+    function isHomePath(pathname = location.pathname) {
+        return pathname === "/" || pathname === "/index.html"
+    }
+
+    function scrollToProjects(updateHash = true) {
+        const projects = document.getElementById("projects")
+        if (!projects) return false
+
+        const top = Math.max(0, projects.getBoundingClientRect().top + window.scrollY)
+        const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+        try {
+            window.scrollTo({ top, left: 0, behavior })
+        } catch {
+            window.scrollTo(0, top)
+        }
+        if (updateHash && location.hash !== "#projects") history.replaceState(history.state, "", "/#projects")
+        return true
+    }
+
+    function handleProjectLink(event) {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        const target = event.target instanceof Element ? event.target : event.target?.parentElement
+        const link = target?.closest('a[href*="#projects"]')
+        if (!link) return
+
+        const destination = new URL(link.href, location.href)
+        if (destination.origin !== location.origin || destination.hash !== "#projects" || !isHomePath(destination.pathname)) return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        if (!isHomePath()) {
+            location.assign("/#projects")
+            return
+        }
+        scrollToProjects()
+    }
 
     const homePanelObserver = new IntersectionObserver(entries => {
         for (const entry of entries) {
@@ -175,6 +212,11 @@
             }
         })
 
+        if (location.hash === "#projects" && !projectHashHandled && panels.length) {
+            projectHashHandled = true
+            requestAnimationFrame(() => requestAnimationFrame(() => scrollToProjects(false)))
+        }
+
         home.querySelectorAll('a[href*="#case-studies"]').forEach(link => { link.href = "/#projects" })
         home.querySelectorAll("h1, h2, h3, h4, h5, h6, p").forEach(node => {
             const label = node.textContent.trim().toLowerCase()
@@ -214,8 +256,8 @@
     function normalizeSiteShell() {
         scheduled = false
 
-        document.body.classList.toggle("site-home", location.pathname === "/" || location.pathname === "/index.html")
-        document.documentElement.classList.toggle("site-home", location.pathname === "/" || location.pathname === "/index.html")
+        document.body.classList.toggle("site-home", isHomePath())
+        document.documentElement.classList.toggle("site-home", isHomePath())
 
         const page = [...document.querySelectorAll("#main > div")].find(element => element.id !== "overlay")
         page?.classList.add("site-shell-page")
@@ -259,6 +301,11 @@
     }
 
     scheduleNormalization()
+    document.addEventListener("click", handleProjectLink, true)
+    addEventListener("hashchange", () => {
+        projectHashHandled = false
+        scheduleNormalization()
+    })
     addEventListener("DOMContentLoaded", scheduleNormalization, { once: true })
     addEventListener("load", scheduleNormalization, { once: true })
     new MutationObserver(scheduleNormalization).observe(document.getElementById("main"), {
