@@ -428,6 +428,23 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     projectIndex += 1
   }
 
+  for (const panel of (await page.locator(".project-scroll-panel").all()).reverse()) {
+    await panel.evaluate(element => element.scrollIntoView({ block: "start", behavior: "instant" }))
+    await expect.poll(() => panel.evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
+    await expect(panel).toHaveClass(/is-active/)
+    const content = panel.locator(":scope > *")
+    for (const child of await content.all()) {
+      await expect(child).toHaveCSS("opacity", "1")
+      await expect(child).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)")
+    }
+    const alignment = await panel.evaluate(element => ({
+      panel: element.getBoundingClientRect().toJSON(),
+      children: [...element.children].map(child => child.getBoundingClientRect().toJSON()),
+    }))
+    expect(Math.abs(alignment.panel.x - 20)).toBeLessThanOrEqual(2)
+    for (const child of alignment.children) expect(Math.abs(child.x - alignment.panel.x)).toBeLessThanOrEqual(2)
+  }
+
   const activeMediaBox = await page.locator(".project-scroll-panel").last().locator(":scope > *").first().boundingBox()
   const progressBox = await page.locator(".project-progress").boundingBox()
   expect(progressBox.x).toBeGreaterThanOrEqual(activeMediaBox.x + activeMediaBox.width)
@@ -455,7 +472,22 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
 
 test("mobile About connect animation stays on one line", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    window.__flapSoundPlayCount = 0
+    HTMLMediaElement.prototype.play = function () {
+      if ((this.currentSrc || this.src).includes("/sounds/sound")) window.__flapSoundPlayCount += 1
+      return Promise.resolve()
+    }
+  })
   await page.goto("/about")
+  const connect = page.locator(".about-connect")
+  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight - innerHeight - 40))
+  await expect(connect).not.toHaveAttribute("data-animated")
+  expect(await page.evaluate(() => window.__flapSoundPlayCount)).toBe(0)
+  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
+  await expect(connect).toHaveAttribute("data-reveal-trigger", "page-bottom")
+  await expect(connect).toHaveAttribute("data-animated", "true")
+  await expect.poll(() => page.evaluate(() => window.__flapSoundPlayCount)).toBeGreaterThan(0)
   const flaps = page.locator(".about-connect-flaps")
   await flaps.scrollIntoViewIfNeeded()
   const layout = await flaps.evaluate(element => ({
@@ -513,4 +545,14 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
   expect(Math.abs(aboutSpacing.viewMoreToAwards - aboutSpacing.referenceGap)).toBeLessThanOrEqual(2)
   await expect(page.getByRole("link", { name: "LinkedIn", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
   await expect(page.getByRole("link", { name: "Instagram", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
+})
+
+test("mobile pages share the reduced header top inset", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const route of ["/", "/about", "/tally", "/sprint-x", "/curalink"]) {
+    await page.goto(route)
+    const header = page.locator(".site-nav-shell").first()
+    await expect(header).toBeVisible()
+    await expect.poll(() => header.evaluate(element => Math.abs(element.getBoundingClientRect().y - 12))).toBeLessThanOrEqual(1)
+  }
 })

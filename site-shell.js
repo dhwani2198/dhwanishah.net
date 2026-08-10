@@ -78,9 +78,15 @@
     }
 
     const homePanelObserver = new IntersectionObserver(entries => {
+        const keepRevealed = matchMedia("(max-width: 809.98px)").matches
         for (const entry of entries) {
             homePanelVisibility.set(entry.target, entry.intersectionRatio)
-            entry.target.classList.toggle("is-active", entry.isIntersecting && entry.intersectionRatio >= .12)
+            const isActive = entry.isIntersecting && entry.intersectionRatio >= .12
+            if (keepRevealed) {
+                if (isActive) entry.target.classList.add("is-active")
+            } else {
+                entry.target.classList.toggle("is-active", isActive)
+            }
         }
         const panels = [...document.querySelectorAll(".project-scroll-panel")]
         if (!panels.length) return
@@ -225,11 +231,33 @@
         footer.parentElement.insertBefore(section, footer)
         startLocalClock(clock)
 
-        new IntersectionObserver((entries, observer) => {
-            if (!entries.some(entry => entry.isIntersecting)) return
-            observer.disconnect()
+        const mobileViewport = matchMedia("(max-width: 809.98px)")
+        if (!mobileViewport.matches) {
+            new IntersectionObserver((entries, observer) => {
+                if (!entries.some(entry => entry.isIntersecting)) return
+                observer.disconnect()
+                revealConnectSection(section, flaps)
+            }, { threshold: .5 }).observe(section)
+            return
+        }
+
+        let sectionVisible = false
+        const reachedPageBottom = () => window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2
+        const revealAtPageBottom = () => {
+            if (!sectionVisible || !reachedPageBottom()) return
+            connectObserver.disconnect()
+            removeEventListener("scroll", revealAtPageBottom)
+            removeEventListener("resize", revealAtPageBottom)
+            section.dataset.revealTrigger = "page-bottom"
             revealConnectSection(section, flaps)
-        }, { threshold: .5 }).observe(section)
+        }
+        const connectObserver = new IntersectionObserver(entries => {
+            sectionVisible = entries.some(entry => entry.isIntersecting)
+            revealAtPageBottom()
+        }, { threshold: .1 })
+        connectObserver.observe(section)
+        addEventListener("scroll", revealAtPageBottom, { passive: true })
+        addEventListener("resize", revealAtPageBottom)
     }
 
     function ensureHomeEnhancements() {

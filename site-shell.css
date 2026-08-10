@@ -181,7 +181,9 @@ body:not(.site-home) .site-nav-shell {
 @media (max-width: 809.98px) {
     :root {
         --site-edge-x: 20px;
+        --site-edge-y: 12px !important;
         --home-edge-x: 20px;
+        --home-edge-y: 12px !important;
         --home-content-gutter: 20px;
     }
 
