@@ -353,6 +353,13 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
+  const expectFooterAtViewportBottom = async () => {
+    await expect.poll(() => footer.evaluate(element => {
+      const box = element.getBoundingClientRect()
+      return Math.abs(window.innerHeight - box.bottom - 12)
+    })).toBeLessThanOrEqual(1)
+  }
+  await expectFooterAtViewportBottom()
 
   const panels = page.locator(".project-scroll-panel")
   const firstProjectContent = panels.first().locator(":scope > *").first()
@@ -378,6 +385,7 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
       expect(box.top).toBeGreaterThanOrEqual(layout.children[index].bottom - 1)
     })
     expect(layout.children.at(-1).bottom).toBeLessThanOrEqual(layout.panel.bottom + 1)
+    await expectFooterAtViewportBottom()
   }
 
   for (const panel of await panels.all()) {
@@ -499,6 +507,17 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   }))
   expect(Math.abs(boundary.panelBottom - boundary.pageBottom)).toBeLessThan(1)
   expect(Math.abs(boundary.panelTop - boundary.maxScroll)).toBeLessThan(1)
+
+  await page.setViewportSize({ width: 390, height: 740 })
+  await expectFooterAtViewportBottom()
+  await expect.poll(() => lastPanel.evaluate(panel => Math.abs(panel.getBoundingClientRect().height - innerHeight))).toBeLessThan(1)
+  await lastPanel.evaluate(panel => panel.scrollIntoView({ block: "start", behavior: "instant" }))
+  await expect.poll(() => lastPanel.evaluate(panel => Math.abs(panel.getBoundingClientRect().top))).toBeLessThan(2)
+  await expectFooterAtViewportBottom()
+  const firstPanel = page.locator(".project-scroll-panel").first()
+  await firstPanel.evaluate(panel => panel.scrollIntoView({ block: "start", behavior: "instant" }))
+  await expect.poll(() => firstPanel.evaluate(panel => Math.abs(panel.getBoundingClientRect().top))).toBeLessThan(2)
+  await expectFooterAtViewportBottom()
 })
 
 test("mobile About connect animation stays on one line", async ({ page }) => {

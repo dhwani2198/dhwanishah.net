@@ -351,8 +351,8 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     html.site-home .framer-Rkf84 .framer-1cf70bh {
-        height: 100svh !important;
-        min-height: 100svh !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
         scroll-snap-align: start !important;
         scroll-snap-stop: always !important;
     }
@@ -364,8 +364,8 @@ body.site-home { overscroll-behavior-y: contain; }
 
     html.site-home .project-scroll-panel {
         box-sizing: border-box !important;
-        height: 100svh !important;
-        min-height: 100svh !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
         padding: 54px 0 !important;
         gap: 24px !important;
         justify-content: center !important;
@@ -511,9 +511,9 @@ body.site-home { overscroll-behavior-y: contain; }
         position: fixed !important;
         z-index: 1;
         order: 0 !important;
-        top: calc(100svh - var(--site-edge-y) - 16px) !important;
+        top: auto !important;
         right: var(--site-edge-x) !important;
-        bottom: auto !important;
+        bottom: var(--site-edge-y) !important;
         left: var(--site-edge-x) !important;
         width: auto !important;
         margin: 0 !important;
