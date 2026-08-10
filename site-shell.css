@@ -391,10 +391,24 @@ body.site-home { overscroll-behavior-y: contain; }
         min-height: 0 !important;
         max-height: none !important;
         aspect-ratio: 4 / 3;
+        position: relative !important;
+    }
+
+    html.site-home .project-scroll-panel > :first-child [data-framer-name="Placeholder"],
+    html.site-home .project-scroll-panel > :first-child [data-framer-background-image-wrapper] {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        aspect-ratio: auto !important;
     }
 
     html.site-home .project-scroll-panel img {
+        position: absolute !important;
         inset: 0 !important;
+        display: block !important;
         width: 100% !important;
         height: 100% !important;
         max-width: 100% !important;
@@ -411,11 +425,20 @@ body.site-home { overscroll-behavior-y: contain; }
     html.site-home .project-scroll-panel > :last-child {
         height: auto !important;
         min-height: 0 !important;
+        display: flex !important;
+        flex-flow: row wrap !important;
+        align-content: flex-start !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
     }
 
     html.site-home .project-scroll-panel > :last-child > :first-child {
+        flex: 0 0 auto !important;
         width: 100% !important;
         max-width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        justify-content: flex-start !important;
         padding-right: 0 !important;
         padding-left: 0 !important;
     }
@@ -424,6 +447,18 @@ body.site-home { overscroll-behavior-y: contain; }
         width: 100% !important;
         max-width: 100% !important;
     }
+
+    html.site-home .project-scroll-panel > :last-child > :not(:first-child) {
+        position: relative !important;
+        inset: auto !important;
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+
+    html.site-home .project-scroll-panel > :last-child > :nth-child(2) { order: 2 !important; }
+    html.site-home .project-scroll-panel > :last-child > :nth-child(3) { order: 1 !important; }
+    html.site-home .project-scroll-panel > :last-child > :nth-child(n + 4) { order: 3 !important; }
 
     body.site-home .portfolio-meta-footer {
         position: fixed !important;
@@ -465,44 +500,88 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] {
-        border: 0;
-        border-radius: 0;
-        background: transparent !important;
-        box-shadow: none;
+        position: fixed !important;
+        z-index: 20 !important;
+        top: calc(-1 * var(--site-edge-y)) !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: calc(-1 * var(--site-edge-x)) !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        padding: var(--site-edge-y) var(--site-edge-x) !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: #000 !important;
+        box-shadow: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
-        overflow: visible !important;
+        overflow: hidden !important;
+        transform: none !important;
+        transform-origin: center !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-788is4,
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1x1qwwf {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        border-radius: 0 !important;
+        transform: none !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-ker4xb {
+        flex: 0 0 34px !important;
+        width: 100% !important;
+        align-self: stretch !important;
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec {
-        align-items: flex-end !important;
-        align-self: flex-end !important;
-        width: 140px !important;
-        min-width: 140px !important;
+        flex: 1 1 auto !important;
+        align-self: stretch !important;
+        width: 100% !important;
+        min-width: 0 !important;
         max-width: none !important;
-        margin-left: auto !important;
-        padding: 8px 12px 10px !important;
-        gap: 4px !important;
         height: auto !important;
-        justify-content: flex-start !important;
-        border-radius: 14px;
-        background: rgba(20, 20, 20, .88);
-        box-shadow: 0 12px 32px rgba(0, 0, 0, .2);
-        backdrop-filter: blur(14px) saturate(125%);
-        -webkit-backdrop-filter: blur(14px) saturate(125%);
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 10px !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        transform: none !important;
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec [data-framer-component-type="RichTextContainer"],
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec .framer-text {
         width: 100% !important;
-        text-align: right !important;
+        text-align: left !important;
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec [data-framer-component-type="RichTextContainer"] {
-        min-height: 44px !important;
+        min-height: 58px !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: flex-end !important;
+        justify-content: flex-start !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec a {
+        display: flex !important;
+        width: 100% !important;
+        min-height: 58px !important;
+        align-items: center !important;
+        color: #fff !important;
+        font-size: clamp(34px, 10vw, 44px) !important;
+        line-height: 1 !important;
+        letter-spacing: -.04em !important;
     }
 
     .framer-AStPX .framer-1wfbg45 {

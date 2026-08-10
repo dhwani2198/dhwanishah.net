@@ -296,7 +296,7 @@ for (const route of routes) {
   })
 }
 
-test("mobile navigation opens and exposes its links", async ({ page }) => {
+test("mobile navigation opens as a full-screen menu", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/")
   const mobileHeader = page.locator(".site-nav-shell").first()
@@ -310,19 +310,21 @@ test("mobile navigation opens and exposes its links", async ({ page }) => {
   await expect(page.getByRole("link", { name: "About", exact: true }).last()).toBeVisible()
   await expect(page.getByRole("link", { name: "Resume", exact: true }).last()).toBeVisible()
   const openMenu = mobileHeader.locator('[data-framer-name="Phone"]')
-  await expect(openMenu).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
+  await expect(openMenu).toHaveCSS("position", "fixed")
+  await expect(openMenu).toHaveCSS("background-color", "rgb(0, 0, 0)")
   const menuLinks = openMenu.locator(".framer-1v617ec")
-  await expect(menuLinks).toHaveCSS("background-color", "rgba(20, 20, 20, 0.88)")
-  expect(await menuLinks.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toContain("blur")
   const openMenuBox = await openMenu.boundingBox()
   const menuLinksBox = await menuLinks.boundingBox()
   const projectLinkBox = await openMenu.getByRole("link", { name: "Projects", exact: true }).boundingBox()
-  expect(Math.abs(menuLinksBox.x + menuLinksBox.width - (openMenuBox.x + openMenuBox.width))).toBeLessThan(1)
-  expect(menuLinksBox.x + menuLinksBox.width - (projectLinkBox.x + projectLinkBox.width)).toBeLessThanOrEqual(13)
-  expect(menuLinksBox.width).toBeGreaterThanOrEqual(140)
-  expect(menuLinksBox.width).toBeLessThanOrEqual(142)
+  expect(Math.abs(openMenuBox.x)).toBeLessThan(1)
+  expect(Math.abs(openMenuBox.y)).toBeLessThan(1)
+  expect(Math.abs(openMenuBox.width - 390)).toBeLessThan(1)
+  expect(Math.abs(openMenuBox.height - 844)).toBeLessThan(1)
+  expect(Math.abs(menuLinksBox.x - 20)).toBeLessThan(1)
+  expect(Math.abs(projectLinkBox.x - 20)).toBeLessThan(1)
+  expect(projectLinkBox.width).toBeGreaterThanOrEqual(350)
   for (const option of await menuLinks.locator('[data-framer-component-type="RichTextContainer"]').all()) {
-    expect((await option.boundingBox()).height).toBeGreaterThanOrEqual(43.9)
+    expect((await option.boundingBox()).height).toBeGreaterThanOrEqual(57.9)
   }
 
   await openMenu.getByRole("link", { name: "Projects", exact: true }).click()
@@ -381,8 +383,27 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   expect(Math.abs(homeTitleBox.x - 20)).toBeLessThanOrEqual(2)
 
   await page.goto("/")
-  for (const image of await page.locator(".project-scroll-panel img").all()) {
+  for (const panel of await page.locator(".project-scroll-panel").all()) {
+    await panel.scrollIntoViewIfNeeded()
+    await expect(panel).toHaveClass(/is-active/)
+    const image = panel.locator("img").first()
+    const media = panel.locator(":scope > *").first()
     await expect(image).toHaveCSS("object-fit", "contain")
+    const imageBox = await image.boundingBox()
+    const mediaBox = await media.boundingBox()
+    expect(imageBox.x).toBeGreaterThanOrEqual(mediaBox.x - 2)
+    expect(imageBox.y).toBeGreaterThanOrEqual(mediaBox.y - 2)
+    expect(imageBox.x + imageBox.width).toBeLessThanOrEqual(mediaBox.x + mediaBox.width + 2)
+    expect(imageBox.y + imageBox.height).toBeLessThanOrEqual(mediaBox.y + mediaBox.height + 2)
+
+    const content = panel.locator(":scope > :last-child")
+    const textBox = await content.locator(":scope > :first-child").boundingBox()
+    const tagBoxes = await content.locator(":scope > :not(:first-child)").evaluateAll(tags =>
+      tags.map(tag => tag.getBoundingClientRect().toJSON())
+    )
+    if (tagBoxes.length) {
+      expect(Math.abs(Math.min(...tagBoxes.map(box => box.x)) - textBox.x)).toBeLessThan(1)
+    }
   }
 })
 
