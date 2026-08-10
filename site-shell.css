@@ -162,8 +162,19 @@ body:not(.site-home) .site-nav-shell {
 
 @media (max-width: 809.98px) {
     .about-connect { min-height: 420px; padding: 72px 0; }
-    .about-connect-flap { width: 30px; height: 44px; font-size: 19px; }
-    .about-connect-flap.is-space { width: 30px; }
+    .about-connect-flaps {
+        width: 100%;
+        flex-wrap: nowrap;
+        gap: 3px;
+    }
+    .about-connect-flap,
+    .about-connect-flap.is-space {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        height: clamp(32px, 10vw, 44px);
+        font-size: clamp(13px, 4.4vw, 19px);
+    }
     .about-connect-actions { gap: 18px; }
     .about-connect-meta { font-size: 11px; }
 }
@@ -292,7 +303,7 @@ body.site-home { overscroll-behavior-y: contain; }
     .portfolio-meta-footer { font-size: 11px; }
     .project-progress { gap: 8px; }
 
-    html.site-home { scroll-snap-type: none !important; }
+    html.site-home { scroll-snap-type: y mandatory !important; }
 
     .framer-Rkf84 [data-framer-name="section header"] {
         display: none !important;
@@ -301,7 +312,8 @@ body.site-home { overscroll-behavior-y: contain; }
     html.site-home .framer-Rkf84 .framer-1cf70bh {
         height: 100dvh !important;
         min-height: 100dvh !important;
-        scroll-snap-align: none !important;
+        scroll-snap-align: start !important;
+        scroll-snap-stop: always !important;
     }
 
     html.site-home .project-scroll-panel {
@@ -312,18 +324,24 @@ body.site-home { overscroll-behavior-y: contain; }
         gap: 24px !important;
         justify-content: center !important;
         overflow: visible !important;
-        scroll-snap-align: none !important;
-        scroll-snap-stop: normal !important;
+        scroll-snap-align: start !important;
+        scroll-snap-stop: always !important;
+        opacity: 0 !important;
+        transform: translateY(28px) !important;
+        transition: opacity .45s ease-out, transform .55s cubic-bezier(.22, 1, .36, 1) !important;
+        will-change: opacity, transform !important;
+        background: #000;
+        z-index: 2;
+    }
+
+    html.site-home .project-scroll-panel.is-active {
         opacity: 1 !important;
-        transform: none !important;
-        transition: none !important;
-        will-change: auto !important;
+        transform: translateY(0) !important;
     }
 
     html.site-home .project-scroll-panel > * {
         flex-shrink: 0 !important;
         max-width: 100% !important;
-        transform: none !important;
     }
 
     html.site-home .project-scroll-panel > :last-child {
@@ -332,18 +350,16 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     body.site-home .portfolio-meta-footer {
-        position: relative !important;
-        z-index: 6;
-        order: 999 !important;
-        flex: none !important;
-        top: auto !important;
-        right: auto !important;
+        position: fixed !important;
+        z-index: 1;
+        order: 0 !important;
+        top: calc(100dvh - var(--site-edge-y) - 16px) !important;
+        right: var(--site-edge-x) !important;
         bottom: auto !important;
-        left: auto !important;
-        width: calc(100vw - (2 * var(--site-edge-x))) !important;
-        margin: 0 auto !important;
-        padding: 0 0 var(--site-edge-y) !important;
-        transform: none;
+        left: var(--site-edge-x) !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     .site-nav-shell .framer-ker4xb {
@@ -358,18 +374,41 @@ body.site-home { overscroll-behavior-y: contain; }
         flex: 0 0 34px !important;
         width: 34px !important;
         height: 34px !important;
-        border: 1px solid rgba(255, 255, 255, .2);
-        border-radius: 12px;
-        background: rgba(255, 255, 255, .11);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 8px 24px rgba(0, 0, 0, .2);
-        backdrop-filter: blur(18px) saturate(160%);
-        -webkit-backdrop-filter: blur(18px) saturate(160%);
-        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        overflow: visible;
     }
 
     .site-nav-shell .framer-9sf85-container [data-framer-name="open"] {
         width: 100% !important;
         height: 100% !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] {
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 18px;
+        background: rgba(8, 8, 8, .58) !important;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+        backdrop-filter: blur(20px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+        overflow: hidden !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec {
+        align-items: flex-end !important;
+        width: 100% !important;
+        max-width: none !important;
+        padding-right: 0 !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec [data-framer-component-type="RichTextContainer"],
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec .framer-text {
+        width: 100% !important;
+        text-align: right !important;
     }
 }
 
