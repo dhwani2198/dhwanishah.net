@@ -134,9 +134,8 @@
                     entry.target.classList.add("is-active")
                     scheduleMobileProjectCentering()
                 }
-            } else {
-                entry.target.classList.toggle("is-active", isActive)
             }
+            entry.target.classList.toggle("is-active", isActive)
         }
         const panels = [...document.querySelectorAll(".project-scroll-panel")]
         if (!panels.length) return
@@ -325,7 +324,7 @@
             panel.id = index === 0 ? "projects" : `project-${index + 1}`
             if (revealedMobileHomePanels.has(panel.id)) {
                 panel.dataset.projectRevealed = "true"
-                panel.classList.add("is-active")
+                if ((homePanelVisibility.get(panel) || 0) >= .12) panel.classList.add("is-active")
             }
             if (!observedHomePanels.has(panel)) {
                 observedHomePanels.add(panel)

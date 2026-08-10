@@ -166,6 +166,11 @@ test("first project fades and pulls up with minimal dot navigation", async ({ pa
   await expect(progress.locator("a").first()).toHaveClass(/is-active/)
   await expect(progress.locator("a").first()).toHaveCSS("width", "6px")
   await expect(progress.locator("a").first()).toHaveCSS("background-color", "rgb(138, 138, 138)")
+  const tallyTitle = await firstPanel.getByText("TALLY", { exact: true }).first().boundingBox()
+  const tallyPills = await firstPanel.evaluate(element => [...element.querySelectorAll("div")]
+    .filter(item => getComputedStyle(item).backgroundColor === "rgb(31, 31, 31)" && item.getBoundingClientRect().width > 20)
+    .map(item => item.getBoundingClientRect().toJSON()))
+  expect(Math.abs(Math.min(...tallyPills.map(pill => pill.x)) - tallyTitle.x)).toBeLessThanOrEqual(1)
 
   for (let index = 1; index < 4; index += 1) {
     const panel = page.locator(".project-scroll-panel").nth(index)
@@ -351,6 +356,7 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
 
   await expect(page.locator('[data-framer-name="section header"]')).toBeHidden()
   await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "y mandatory")
+  await expect(page.locator("html")).toHaveCSS("scroll-behavior", "auto")
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
@@ -364,12 +370,17 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
 
   const panels = page.locator(".project-scroll-panel")
   const firstProjectContent = panels.first().locator(":scope > *").first()
-  await expect(panels.first()).toHaveCSS("transform", "none")
-  await expect(firstProjectContent).toHaveCSS("opacity", "0")
-  expect(await firstProjectContent.evaluate(element => getComputedStyle(element).transform)).not.toBe("none")
+  await expect(panels.first()).toHaveCSS("opacity", "0")
+  expect(await panels.first().evaluate(element => getComputedStyle(element).transform)).not.toBe("none")
+  await expect(firstProjectContent).toHaveCSS("opacity", "1")
   for (const panel of await panels.all()) {
     await panel.scrollIntoViewIfNeeded()
     await expect(panel).toHaveClass(/is-active/)
+    await expect(panel).toHaveCSS("opacity", "1")
+    await expect.poll(() => panel.evaluate(element => {
+      const transform = getComputedStyle(element).transform
+      return transform === "none" ? 0 : Math.abs(new DOMMatrixReadOnly(transform).m42)
+    })).toBeLessThan(.5)
     await expect(panel).toHaveCSS("scroll-snap-align", "start")
     const content = panel.locator(":scope > *").first()
     await expect(content).toHaveCSS("opacity", "1")
@@ -390,8 +401,9 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
 
   for (const panel of await panels.all()) {
     await expect(panel).toHaveAttribute("data-project-revealed", "true")
-    await expect(panel).toHaveClass(/is-active/)
   }
+  for (let index = 0; index < 3; index += 1) await expect(panels.nth(index)).not.toHaveClass(/is-active/)
+  await expect(panels.last()).toHaveClass(/is-active/)
 
   const homePanelBox = await panels.first().boundingBox()
   const homeMediaBox = await panels.first().locator(":scope > *").first().boundingBox()
@@ -554,6 +566,21 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   await firstPanel.evaluate(panel => panel.scrollIntoView({ block: "start", behavior: "instant" }))
   await expect.poll(() => firstPanel.evaluate(panel => Math.abs(panel.getBoundingClientRect().top))).toBeLessThan(2)
   await expectFooterAtViewportBottom()
+
+  await page.setViewportSize({ width: 390, height: 667 })
+  await page.goto("/")
+  const reversePanels = page.locator(".project-scroll-panel")
+  await reversePanels.last().evaluate(panel => panel.scrollIntoView({ block: "start", behavior: "instant" }))
+  for (let index = 2; index >= 0; index -= 1) {
+    await page.mouse.wheel(0, -700)
+    const panel = reversePanels.nth(index)
+    await expect.poll(() => panel.evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
+    await expect(panel).toHaveClass(/is-active/)
+    await expect.poll(() => panel.evaluate(element => {
+      const transform = getComputedStyle(element).transform
+      return transform === "none" ? 0 : Math.abs(new DOMMatrixReadOnly(transform).m42)
+    })).toBeLessThan(.5)
+  }
 })
 
 test("mobile About connect animation stays on one line", async ({ page }) => {
@@ -642,6 +669,6 @@ test("mobile pages share the reduced header top inset", async ({ page }) => {
     await page.goto(route)
     const header = page.locator(".site-nav-shell").first()
     await expect(header).toBeVisible()
-    await expect.poll(() => header.evaluate(element => Math.abs(element.getBoundingClientRect().y - 12))).toBeLessThanOrEqual(1)
+    await expect.poll(() => header.evaluate(element => Math.abs(element.getBoundingClientRect().y - 8))).toBeLessThanOrEqual(1)
   }
 })
