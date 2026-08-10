@@ -29,8 +29,8 @@
 	<script>try{if(localStorage.getItem("__framer_force_showing_editorbar_since")){const n=document.createElement("link");n.rel="modulepreload";n.href="https://framer.com/edit/init.mjs";document.head.appendChild(n)}}catch(e){}</script>
 	<link rel="canonical" href="/"><meta property="og:url" content="/"><!-- Start of headStart -->
     
-    <link rel="stylesheet" href="/site-shell.css?v=20260810-5">
-    <script defer src="/site-shell.js?v=20260810-5"></script>
+    <link rel="stylesheet" href="/site-shell.css?v=20260810-6">
+    <script defer src="/site-shell.js?v=20260810-6"></script>
     <style id="project-scroll-styles">
         /* Full-screen project paging, inspired by the reference site's work section. */
         :root {
@@ -40,12 +40,12 @@
         }
 
         html {
-            scroll-behavior: smooth;
+            scroll-behavior: auto;
             scroll-snap-type: y mandatory;
         }
 
         body {
-            overscroll-behavior-y: contain;
+            overscroll-behavior-y: auto;
         }
 
         /* Minimal transparent site header. */
@@ -94,7 +94,7 @@
             min-height: 100svh;
             position: relative !important;
             scroll-snap-align: start;
-            scroll-snap-stop: always;
+            scroll-snap-stop: normal;
         }
 
         .project-scroll-panel {
@@ -104,16 +104,16 @@
             min-height: 100svh !important;
             padding-block: clamp(42px, 7vh, 80px) !important;
             scroll-snap-align: start;
-            scroll-snap-stop: always;
-            opacity: 0 !important;
-            transform: translateY(28px) !important;
-            transition: opacity .45s ease-out, transform .55s cubic-bezier(.22, 1, .36, 1) !important;
-            will-change: opacity, transform;
+            scroll-snap-stop: normal;
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+            will-change: auto;
         }
 
         .project-scroll-panel.is-active {
             opacity: 1 !important;
-            transform: translateY(0) !important;
+            transform: none !important;
         }
 
         .project-section-label { display: none !important; }
@@ -576,6 +576,7 @@
     <!-- Start of bodyEnd -->
     <script>
         (() => {
+            if (document.querySelector('script[src^="/site-shell.js"]')) return
             const panelNames = [
                 "tally section",
                 "sprint x section",

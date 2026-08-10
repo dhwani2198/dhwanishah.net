@@ -218,11 +218,11 @@ body:not(.site-home) .site-nav-shell {
 }
 
 html.site-home {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     scroll-snap-type: y mandatory;
 }
 
-body.site-home { overscroll-behavior-y: contain; }
+body.site-home { overscroll-behavior-y: auto; }
 
 .framer-14n88so-container {
     top: var(--site-header-y) !important;
@@ -250,7 +250,7 @@ body.site-home { overscroll-behavior-y: contain; }
     min-height: 100svh;
     position: relative !important;
     scroll-snap-align: start;
-    scroll-snap-stop: always;
+    scroll-snap-stop: normal;
 }
 
 .project-scroll-panel {
@@ -260,14 +260,14 @@ body.site-home { overscroll-behavior-y: contain; }
     min-height: 100svh !important;
     padding-block: clamp(42px, 7vh, 80px) !important;
     scroll-snap-align: start;
-    scroll-snap-stop: always;
-    opacity: 0 !important;
-    transform: translateY(28px) !important;
-    transition: opacity .45s ease-out, transform .55s cubic-bezier(.22, 1, .36, 1) !important;
-    will-change: opacity, transform;
+    scroll-snap-stop: normal;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto;
 }
 
-.project-scroll-panel.is-active { opacity: 1 !important; transform: translateY(0) !important; }
+.project-scroll-panel.is-active { opacity: 1 !important; transform: none !important; }
 .project-section-label { display: none !important; }
 
 .project-progress {
@@ -342,10 +342,10 @@ body.site-home { overscroll-behavior-y: contain; }
     html.site-home {
         --home-edge-x: 20px !important;
         --home-content-gutter: 20px !important;
-        overscroll-behavior-y: none !important;
+        overscroll-behavior-y: auto !important;
     }
     body.site-home {
-        overscroll-behavior-y: none !important;
+        overscroll-behavior-y: auto !important;
         touch-action: pan-y;
     }
 
@@ -357,7 +357,7 @@ body.site-home { overscroll-behavior-y: contain; }
         height: 100dvh !important;
         min-height: 100dvh !important;
         scroll-snap-align: start !important;
-        scroll-snap-stop: always !important;
+        scroll-snap-stop: normal !important;
     }
 
     html.site-home .framer-Rkf84 {
@@ -375,11 +375,11 @@ body.site-home { overscroll-behavior-y: contain; }
         justify-content: center !important;
         overflow: visible !important;
         scroll-snap-align: start !important;
-        scroll-snap-stop: always !important;
-        opacity: 0 !important;
-        transform: translateY(28px) !important;
-        transition: opacity .45s ease-out, transform .55s cubic-bezier(.22, 1, .36, 1) !important;
-        will-change: opacity, transform !important;
+        scroll-snap-stop: normal !important;
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+        will-change: auto !important;
         background: #000;
         z-index: 2;
     }
@@ -498,11 +498,11 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     html.site-home [data-framer-name="tally section"] > :last-child > :first-child {
-        margin-bottom: 12px !important;
+        margin-bottom: 4px !important;
     }
 
     html.site-home [data-framer-name="sprint x section"] > :last-child > :not(:first-child) {
-        margin-top: 31px !important;
+        margin-top: 23px !important;
     }
 
     html.site-home [data-framer-name="curalink section"] .framer-1cnb6ar,
@@ -512,13 +512,13 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     html.site-home [data-framer-name="curalink section"] .framer-1cnb6ar {
-        translate: 0 -2px !important;
+        translate: 0 -10px !important;
         transition: none !important;
     }
 
     html.site-home [data-framer-name="Arch portfolio section"] .framer-1cszixz,
     html.site-home [data-framer-name="Arch portfolio section"] .framer-r4cse6 {
-        translate: 0 -1px !important;
+        translate: 0 -9px !important;
         transition: none !important;
     }
 

@@ -148,29 +148,35 @@ test("homepage split-flap animation stays centered at every breakpoint", async (
   }
 })
 
-test("first project fades and pulls up with minimal dot navigation", async ({ page }) => {
+test("first project uses native snap motion with minimal dot navigation", async ({ page }) => {
   await page.goto("/")
   const firstPanel = page.locator(".project-scroll-panel").first()
   const progress = page.locator(".project-progress")
 
   await expect(progress.locator("a")).toHaveCount(4)
   await expect(progress).not.toHaveClass(/is-visible/)
-  await expect(firstPanel).toHaveCSS("opacity", "0")
-  expect(await firstPanel.evaluate(element => getComputedStyle(element).transform)).not.toBe("none")
+  await expect(firstPanel).toHaveCSS("opacity", "1")
+  await expect(firstPanel).toHaveCSS("transform", "none")
+  await expect(firstPanel).toHaveCSS("transition-duration", "0s")
 
   await firstPanel.scrollIntoViewIfNeeded()
   await expect(firstPanel).toHaveClass(/is-active/)
   await expect(firstPanel).toHaveCSS("opacity", "1")
-  await expect(firstPanel).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)")
+  await expect(firstPanel).toHaveCSS("transform", "none")
   await expect(progress).toHaveClass(/is-visible/)
   await expect(progress.locator("a").first()).toHaveClass(/is-active/)
   await expect(progress.locator("a").first()).toHaveCSS("width", "6px")
   await expect(progress.locator("a").first()).toHaveCSS("background-color", "rgb(138, 138, 138)")
-  const tallyTitle = await firstPanel.getByText("TALLY", { exact: true }).first().boundingBox()
-  const tallyPills = await firstPanel.evaluate(element => [...element.querySelectorAll("div")]
-    .filter(item => getComputedStyle(item).backgroundColor === "rgb(31, 31, 31)" && item.getBoundingClientRect().width > 20)
-    .map(item => item.getBoundingClientRect().toJSON()))
-  expect(Math.abs(Math.min(...tallyPills.map(pill => pill.x)) - tallyTitle.x)).toBeLessThanOrEqual(1)
+  const tallyAlignment = await firstPanel.evaluate(element => {
+    const title = [...element.querySelectorAll('[data-framer-component-type="RichTextContainer"]')]
+      .find(item => item.textContent.trim() === "TALLY" && getComputedStyle(item).display !== "none")
+      ?.getBoundingClientRect()
+    const pills = [...element.querySelectorAll("div")]
+      .filter(item => getComputedStyle(item).backgroundColor === "rgb(31, 31, 31)" && item.getBoundingClientRect().width > 20)
+      .map(item => item.getBoundingClientRect())
+    return { titleX: title?.x, pillX: Math.min(...pills.map(pill => pill.x)) }
+  })
+  expect(Math.abs(tallyAlignment.pillX - tallyAlignment.titleX)).toBeLessThanOrEqual(1)
 
   for (let index = 1; index < 4; index += 1) {
     const panel = page.locator(".project-scroll-panel").nth(index)
@@ -357,6 +363,7 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   await expect(page.locator('[data-framer-name="section header"]')).toBeHidden()
   await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "y mandatory")
   await expect(page.locator("html")).toHaveCSS("scroll-behavior", "auto")
+  await expect(page.locator("body")).toHaveCSS("overscroll-behavior-y", "auto")
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
@@ -370,8 +377,9 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
 
   const panels = page.locator(".project-scroll-panel")
   const firstProjectContent = panels.first().locator(":scope > *").first()
-  await expect(panels.first()).toHaveCSS("opacity", "0")
-  expect(await panels.first().evaluate(element => getComputedStyle(element).transform)).not.toBe("none")
+  await expect(panels.first()).toHaveCSS("opacity", "1")
+  await expect(panels.first()).toHaveCSS("transform", "none")
+  await expect(panels.first()).toHaveCSS("scroll-snap-stop", "normal")
   await expect(firstProjectContent).toHaveCSS("opacity", "1")
   for (const panel of await panels.all()) {
     await panel.scrollIntoViewIfNeeded()
@@ -473,7 +481,7 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
           .filter(tag => getComputedStyle(tag).backgroundColor === "rgb(31, 31, 31)" && tag.getBoundingClientRect().width > 20)
           .map(tag => tag.getBoundingClientRect())
         if (!description || !tags.length) return Number.POSITIVE_INFINITY
-        return Math.abs(Math.min(...tags.map(tag => tag.top)) - description.bottom - 20)
+        return Math.abs(Math.min(...tags.map(tag => tag.top)) - description.bottom - 12)
       }, descriptionSelector)).toBeLessThanOrEqual(1.5)
     }
     projectIndex += 1
@@ -527,7 +535,7 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   })
   const firstPillRow = tallyLayout.pills.filter(pill => Math.abs(pill.top - Math.min(...tallyLayout.pills.map(item => item.top))) < 1)
   firstPillRow.sort((a, b) => a.left - b.left)
-  expect(firstPillRow[0].top - tallyLayout.text.bottom).toBeCloseTo(20, 0)
+  expect(firstPillRow[0].top - tallyLayout.text.bottom).toBeCloseTo(12, 0)
   expect(firstPillRow[1].left - firstPillRow[0].right).toBeCloseTo(8, 0)
   const secondRow = tallyLayout.pills.find(pill => pill.top > firstPillRow[0].top + 1)
   expect(secondRow.top - firstPillRow[0].bottom).toBeCloseTo(8, 0)

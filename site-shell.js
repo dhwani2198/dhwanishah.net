@@ -83,7 +83,7 @@
         panelCenteringFrame = undefined
         if (!matchMedia("(max-width: 809.98px)").matches) return
 
-        document.querySelectorAll('.project-scroll-panel[data-project-revealed="true"]').forEach(panel => {
+        document.querySelectorAll(".project-scroll-panel").forEach(panel => {
             const image = panel.querySelector("img")
             const textElements = [...(panel.lastElementChild?.querySelectorAll('[data-framer-component-type="RichTextContainer"]') || [])]
             const visibleElements = [image, ...textElements].filter(element => {
