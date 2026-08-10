@@ -351,8 +351,8 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     html.site-home .framer-Rkf84 .framer-1cf70bh {
-        height: 100dvh !important;
-        min-height: 100dvh !important;
+        height: 100svh !important;
+        min-height: 100svh !important;
         scroll-snap-align: start !important;
         scroll-snap-stop: always !important;
     }
@@ -364,9 +364,9 @@ body.site-home { overscroll-behavior-y: contain; }
 
     html.site-home .project-scroll-panel {
         box-sizing: border-box !important;
-        height: 100dvh !important;
-        min-height: 100dvh !important;
-        padding: 64px 0 44px !important;
+        height: 100svh !important;
+        min-height: 100svh !important;
+        padding: 54px 0 !important;
         gap: 24px !important;
         justify-content: center !important;
         overflow: visible !important;
@@ -438,6 +438,11 @@ body.site-home { overscroll-behavior-y: contain; }
         transform: translateY(0) !important;
     }
 
+    html.site-home .project-scroll-panel[data-project-revealed="true"] > * {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+
     html.site-home .project-scroll-panel > :last-child {
         height: auto !important;
         min-height: 0 !important;
@@ -483,6 +488,15 @@ body.site-home { overscroll-behavior-y: contain; }
         padding: 0 !important;
     }
 
+    html.site-home [data-framer-name="tally section"] > :last-child {
+        column-gap: 8px !important;
+        row-gap: 8px !important;
+    }
+
+    html.site-home [data-framer-name="tally section"] > :last-child > :first-child {
+        margin-bottom: 12px !important;
+    }
+
     html.site-home [data-framer-name="sprint x section"] > :last-child > :not(:first-child) {
         margin-top: 31px !important;
     }
@@ -497,7 +511,7 @@ body.site-home { overscroll-behavior-y: contain; }
         position: fixed !important;
         z-index: 1;
         order: 0 !important;
-        top: calc(100dvh - var(--site-edge-y) - 16px) !important;
+        top: calc(100svh - var(--site-edge-y) - 16px) !important;
         right: var(--site-edge-x) !important;
         bottom: auto !important;
         left: var(--site-edge-x) !important;
@@ -552,6 +566,13 @@ body.site-home { overscroll-behavior-y: contain; }
         overflow: hidden !important;
         transform: none !important;
         transform-origin: center !important;
+        clip-path: inset(0 0 0 0);
+        animation: mobile-menu-open .28s cubic-bezier(.22, 1, .36, 1) both !important;
+    }
+
+    @keyframes mobile-menu-open {
+        from { clip-path: inset(0 0 181px 0); }
+        to { clip-path: inset(0 0 0 0); }
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-788is4,
@@ -570,6 +591,21 @@ body.site-home { overscroll-behavior-y: contain; }
         flex: 0 0 34px !important;
         width: 100% !important;
         align-self: stretch !important;
+        transform: translateY(-8px) !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-ker4xb > [data-framer-component-type="RichTextContainer"],
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-ker4xb > [data-framer-component-type="RichTextContainer"] * {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-ker4xb > [data-framer-component-type="RichTextContainer"] .framer-text,
+    .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-ker4xb > [data-framer-component-type="RichTextContainer"] a {
+        font-size: 17px !important;
+        line-height: 17px !important;
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec {
@@ -592,6 +628,12 @@ body.site-home { overscroll-behavior-y: contain; }
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         transform: none !important;
+        opacity: 0;
+        animation: mobile-menu-links-in .22s ease-out .06s forwards !important;
+    }
+
+    @keyframes mobile-menu-links-in {
+        to { opacity: 1; }
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec [data-framer-component-type="RichTextContainer"],
@@ -670,7 +712,7 @@ body.site-home { overscroll-behavior-y: contain; }
 
 @media (max-width: 809.98px) and (max-height: 720px) {
     html.site-home .project-scroll-panel {
-        padding: 24px 0 20px !important;
+        padding: 22px 0 !important;
         gap: 16px !important;
     }
 

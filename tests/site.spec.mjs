@@ -303,6 +303,7 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   const menuButton = mobileHeader.locator('.framer-9sf85-container')
   const headerBox = await mobileHeader.boundingBox()
   const menuBox = await menuButton.boundingBox()
+  const closedNameBox = await mobileHeader.getByRole("link", { name: "Dhwani Shah", exact: true }).boundingBox()
   expect(Math.abs(menuBox.x + menuBox.width - (headerBox.x + headerBox.width))).toBeLessThan(1)
   await expect(menuButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
   expect(await menuButton.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toBe("none")
@@ -313,6 +314,7 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await expect(openMenu).toHaveCSS("position", "fixed")
   await expect(openMenu).toHaveCSS("background-color", "rgb(0, 0, 0)")
   const menuLinks = openMenu.locator(".framer-1v617ec")
+  const openName = openMenu.getByRole("link", { name: "Dhwani Shah", exact: true })
   const openMenuBox = await openMenu.boundingBox()
   const menuLinksBox = await menuLinks.boundingBox()
   const projectLinkBox = await openMenu.getByRole("link", { name: "Projects", exact: true }).boundingBox()
@@ -320,6 +322,13 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   expect(Math.abs(openMenuBox.y)).toBeLessThan(1)
   expect(Math.abs(openMenuBox.width - 390)).toBeLessThan(1)
   expect(Math.abs(openMenuBox.height - 243)).toBeLessThan(1)
+  const openNameBox = await openName.boundingBox()
+  expect(Math.abs(openNameBox.x - closedNameBox.x)).toBeLessThan(1)
+  expect(Math.abs(openNameBox.y - closedNameBox.y)).toBeLessThan(1)
+  expect(Math.abs(openNameBox.height - closedNameBox.height)).toBeLessThan(1)
+  await expect(openName).toHaveCSS("font-size", "17px")
+  await expect(openMenu).toHaveCSS("animation-name", "mobile-menu-open")
+  await expect(menuLinks).toHaveCSS("animation-name", "mobile-menu-links-in")
   expect(Math.abs(menuLinksBox.x - 20)).toBeLessThan(1)
   expect(projectLinkBox.width).toBeGreaterThanOrEqual(350)
   await expect(openMenu.getByRole("link", { name: "Projects", exact: true })).toHaveCSS("font-size", "15px")
@@ -369,6 +378,11 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
       expect(box.top).toBeGreaterThanOrEqual(layout.children[index].bottom - 1)
     })
     expect(layout.children.at(-1).bottom).toBeLessThanOrEqual(layout.panel.bottom + 1)
+  }
+
+  for (const panel of await panels.all()) {
+    await expect(panel).toHaveAttribute("data-project-revealed", "true")
+    await expect(panel).toHaveClass(/is-active/)
   }
 
   const homePanelBox = await panels.first().boundingBox()
@@ -443,7 +457,24 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     }))
     expect(Math.abs(alignment.panel.x - 20)).toBeLessThanOrEqual(2)
     for (const child of alignment.children) expect(Math.abs(child.x - alignment.panel.x)).toBeLessThanOrEqual(2)
+    const topSpace = alignment.children[0].top - alignment.panel.top
+    const bottomSpace = alignment.panel.bottom - alignment.children.at(-1).bottom
+    expect(Math.abs(topSpace - bottomSpace)).toBeLessThanOrEqual(2)
   }
+
+
+  const tallyContent = page.locator('[data-framer-name="tally section"] > :last-child')
+  const tallyLayout = await tallyContent.evaluate(element => {
+    const text = element.firstElementChild.getBoundingClientRect()
+    const pills = [...element.children].slice(1).map(child => child.getBoundingClientRect().toJSON())
+    return { text: text.toJSON(), pills }
+  })
+  const firstPillRow = tallyLayout.pills.filter(pill => Math.abs(pill.top - Math.min(...tallyLayout.pills.map(item => item.top))) < 1)
+  firstPillRow.sort((a, b) => a.left - b.left)
+  expect(firstPillRow[0].top - tallyLayout.text.bottom).toBeCloseTo(20, 0)
+  expect(firstPillRow[1].left - firstPillRow[0].right).toBeCloseTo(8, 0)
+  const secondRow = tallyLayout.pills.find(pill => pill.top > firstPillRow[0].top + 1)
+  expect(secondRow.top - firstPillRow[0].bottom).toBeCloseTo(8, 0)
 
   const activeMediaBox = await page.locator(".project-scroll-panel").last().locator(":scope > *").first().boundingBox()
   const progressBox = await page.locator(".project-progress").boundingBox()

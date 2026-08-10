@@ -7,6 +7,7 @@
     const homePanelNames = ["tally section", "sprint x section", "curalink section", "Arch portfolio section"]
     const observedHomePanels = new WeakSet()
     const homePanelVisibility = new WeakMap()
+    const revealedMobileHomePanels = new Set()
     let flapSoundPool
     let lastFlapSoundAt = 0
     let scheduled = false
@@ -83,7 +84,11 @@
             homePanelVisibility.set(entry.target, entry.intersectionRatio)
             const isActive = entry.isIntersecting && entry.intersectionRatio >= .12
             if (keepRevealed) {
-                if (isActive) entry.target.classList.add("is-active")
+                if (isActive) {
+                    revealedMobileHomePanels.add(entry.target.id)
+                    entry.target.dataset.projectRevealed = "true"
+                    entry.target.classList.add("is-active")
+                }
             } else {
                 entry.target.classList.toggle("is-active", isActive)
             }
@@ -273,6 +278,10 @@
         panels.forEach((panel, index) => {
             panel.classList.add("project-scroll-panel")
             panel.id = index === 0 ? "projects" : `project-${index + 1}`
+            if (revealedMobileHomePanels.has(panel.id)) {
+                panel.dataset.projectRevealed = "true"
+                panel.classList.add("is-active")
+            }
             if (!observedHomePanels.has(panel)) {
                 observedHomePanels.add(panel)
                 homePanelObserver.observe(panel)
@@ -377,7 +386,7 @@
     addEventListener("load", scheduleNormalization, { once: true })
     new MutationObserver(scheduleNormalization).observe(document.getElementById("main"), {
         attributes: true,
-        attributeFilter: ["href"],
+        attributeFilter: ["href", "class"],
         childList: true,
         characterData: true,
         subtree: true,
