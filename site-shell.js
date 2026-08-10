@@ -13,6 +13,7 @@
     let scheduled = false
     let projectHashHandled = false
     let projectScrollTimer
+    let panelCenteringFrame
 
     function isHomePath(pathname = location.pathname) {
         return pathname === "/" || pathname === "/index.html"
@@ -78,6 +79,49 @@
         }
     }
 
+    function centerVisibleMobileProjectContent() {
+        panelCenteringFrame = undefined
+        if (!matchMedia("(max-width: 809.98px)").matches) return
+
+        document.querySelectorAll('.project-scroll-panel[data-project-revealed="true"]').forEach(panel => {
+            const image = panel.querySelector("img")
+            const textElements = [...(panel.lastElementChild?.querySelectorAll('[data-framer-component-type="RichTextContainer"]') || [])]
+            const visibleElements = [image, ...textElements].filter(element => {
+                if (!element) return false
+                const style = getComputedStyle(element)
+                const box = element.getBoundingClientRect()
+                return style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0
+            })
+            if (!visibleElements.length) return
+
+            const panelBox = panel.getBoundingClientRect()
+            const boxes = visibleElements.map(element => {
+                const directChild = [...panel.children].find(child => child === element || child.contains(element))
+                const transform = directChild ? getComputedStyle(directChild).transform : "none"
+                let translateY = 0
+                if (transform && transform !== "none") {
+                    try { translateY = new DOMMatrixReadOnly(transform).m42 } catch {}
+                }
+                const box = element.getBoundingClientRect()
+                return { top: box.top - translateY, bottom: box.bottom - translateY }
+            })
+            const visualTop = Math.min(...boxes.map(box => box.top))
+            const visualBottom = Math.max(...boxes.map(box => box.bottom))
+            const topSpace = visualTop - panelBox.top
+            const bottomSpace = panelBox.bottom - visualBottom
+            const nextOffset = Math.max(-60, Math.min(60, (bottomSpace - topSpace) / 2))
+            const currentOffset = Number.parseFloat(panel.style.getPropertyValue("--project-visual-offset-y")) || 0
+            if (Math.abs(nextOffset - currentOffset) > .25) {
+                panel.style.setProperty("--project-visual-offset-y", `${nextOffset.toFixed(2)}px`)
+            }
+        })
+    }
+
+    function scheduleMobileProjectCentering() {
+        if (panelCenteringFrame !== undefined) return
+        panelCenteringFrame = requestAnimationFrame(() => requestAnimationFrame(centerVisibleMobileProjectContent))
+    }
+
     const homePanelObserver = new IntersectionObserver(entries => {
         const keepRevealed = matchMedia("(max-width: 809.98px)").matches
         for (const entry of entries) {
@@ -88,6 +132,7 @@
                     revealedMobileHomePanels.add(entry.target.id)
                     entry.target.dataset.projectRevealed = "true"
                     entry.target.classList.add("is-active")
+                    scheduleMobileProjectCentering()
                 }
             } else {
                 entry.target.classList.toggle("is-active", isActive)
@@ -286,6 +331,11 @@
                 observedHomePanels.add(panel)
                 homePanelObserver.observe(panel)
             }
+            panel.querySelectorAll("img").forEach(image => {
+                if (image.dataset.projectCenteringReady) return
+                image.dataset.projectCenteringReady = "true"
+                if (!image.complete) image.addEventListener("load", scheduleMobileProjectCentering, { once: true })
+            })
         })
 
         if (location.hash === "#projects" && !projectHashHandled && panels.length) {
@@ -327,6 +377,7 @@
             panels[0].parentElement.appendChild(meta)
             startLocalClock(clock)
         }
+        scheduleMobileProjectCentering()
     }
 
     function normalizeSiteShell() {
@@ -384,6 +435,8 @@
     })
     addEventListener("DOMContentLoaded", scheduleNormalization, { once: true })
     addEventListener("load", scheduleNormalization, { once: true })
+    addEventListener("resize", scheduleMobileProjectCentering, { passive: true })
+    document.fonts?.ready.then(scheduleMobileProjectCentering)
     new MutationObserver(scheduleNormalization).observe(document.getElementById("main"), {
         attributes: true,
         attributeFilter: ["href", "class"],

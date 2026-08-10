@@ -300,6 +300,7 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/")
   const mobileHeader = page.locator(".site-nav-shell").first()
+  await expect.poll(() => mobileHeader.evaluate(element => getComputedStyle(element).transform)).toBe("matrix(1, 0, 0, 1, 0, 0)")
   const menuButton = mobileHeader.locator('.framer-9sf85-container')
   const headerBox = await mobileHeader.boundingBox()
   const menuBox = await menuButton.boundingBox()
@@ -372,7 +373,6 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     await expect(panel).toHaveCSS("scroll-snap-align", "start")
     const content = panel.locator(":scope > *").first()
     await expect(content).toHaveCSS("opacity", "1")
-    await expect(content).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)")
     const layout = await panel.evaluate(element => {
       const children = [...element.children].filter(child => getComputedStyle(child).display !== "none")
       const boxes = children.map(child => child.getBoundingClientRect())
@@ -415,6 +415,17 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     const image = panel.locator("img").first()
     const media = panel.locator(":scope > *").first()
     await expect(image).toHaveCSS("object-fit", "contain")
+    await expect.poll(() => panel.evaluate(element => {
+      const imageBox = element.querySelector("img")?.getBoundingClientRect()
+      const mediaBox = element.firstElementChild?.getBoundingClientRect()
+      if (!imageBox || !mediaBox) return Number.POSITIVE_INFINITY
+      return Math.max(
+        mediaBox.left - imageBox.left,
+        mediaBox.top - imageBox.top,
+        imageBox.right - mediaBox.right,
+        imageBox.bottom - mediaBox.bottom,
+      )
+    })).toBeLessThanOrEqual(2)
     const imageBox = await image.boundingBox()
     const mediaBox = await media.boundingBox()
     expect(imageBox.x).toBeGreaterThanOrEqual(mediaBox.x - 2)
@@ -443,9 +454,15 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     )
     if (greyTags.length) {
       expect(Math.abs(Math.min(...greyTags.map(box => box.x)) - textBox.x)).toBeLessThan(1)
-      const descriptionBox = await panel.locator(descriptionSelectors[projectIndex]).boundingBox()
-      expect(Math.min(...greyTags.map(box => box.y)) - (descriptionBox.y + descriptionBox.height)).toBeGreaterThanOrEqual(18)
-      expect(Math.min(...greyTags.map(box => box.y)) - (descriptionBox.y + descriptionBox.height)).toBeLessThanOrEqual(24)
+      const descriptionSelector = descriptionSelectors[projectIndex]
+      await expect.poll(() => panel.evaluate((element, selector) => {
+        const description = element.querySelector(selector)?.getBoundingClientRect()
+        const tags = [...element.lastElementChild.querySelectorAll("div")]
+          .filter(tag => getComputedStyle(tag).backgroundColor === "rgb(31, 31, 31)" && tag.getBoundingClientRect().width > 20)
+          .map(tag => tag.getBoundingClientRect())
+        if (!description || !tags.length) return Number.POSITIVE_INFINITY
+        return Math.abs(Math.min(...tags.map(tag => tag.top)) - description.bottom - 20)
+      }, descriptionSelector)).toBeLessThanOrEqual(1.5)
     }
     projectIndex += 1
   }
@@ -454,19 +471,38 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     await panel.evaluate(element => element.scrollIntoView({ block: "start", behavior: "instant" }))
     await expect.poll(() => panel.evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
     await expect(panel).toHaveClass(/is-active/)
+    await expect.poll(() => panel.evaluate(element => {
+      const panelBox = element.getBoundingClientRect()
+      const visible = [element.querySelector("img"), ...element.lastElementChild.querySelectorAll('[data-framer-component-type="RichTextContainer"]')]
+        .filter(child => {
+          if (!child) return false
+          const box = child.getBoundingClientRect()
+          return getComputedStyle(child).display !== "none" && getComputedStyle(child).visibility !== "hidden" && box.width > 0 && box.height > 0
+        })
+        .map(child => child.getBoundingClientRect())
+      const topSpace = Math.min(...visible.map(box => box.top)) - panelBox.top
+      const bottomSpace = panelBox.bottom - Math.max(...visible.map(box => box.bottom))
+      return Math.abs(topSpace - bottomSpace)
+    })).toBeLessThanOrEqual(2)
     const content = panel.locator(":scope > *")
     for (const child of await content.all()) {
       await expect(child).toHaveCSS("opacity", "1")
-      await expect(child).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)")
     }
     const alignment = await panel.evaluate(element => ({
       panel: element.getBoundingClientRect().toJSON(),
       children: [...element.children].map(child => child.getBoundingClientRect().toJSON()),
+      visible: [element.querySelector("img"), ...element.lastElementChild.querySelectorAll('[data-framer-component-type="RichTextContainer"]')]
+        .filter(child => {
+          if (!child) return false
+          const box = child.getBoundingClientRect()
+          return getComputedStyle(child).display !== "none" && getComputedStyle(child).visibility !== "hidden" && box.width > 0 && box.height > 0
+        })
+        .map(child => child.getBoundingClientRect().toJSON()),
     }))
     expect(Math.abs(alignment.panel.x - 20)).toBeLessThanOrEqual(2)
     for (const child of alignment.children) expect(Math.abs(child.x - alignment.panel.x)).toBeLessThanOrEqual(2)
-    const topSpace = alignment.children[0].top - alignment.panel.top
-    const bottomSpace = alignment.panel.bottom - alignment.children.at(-1).bottom
+    const topSpace = Math.min(...alignment.visible.map(box => box.top)) - alignment.panel.top
+    const bottomSpace = alignment.panel.bottom - Math.max(...alignment.visible.map(box => box.bottom))
     expect(Math.abs(topSpace - bottomSpace)).toBeLessThanOrEqual(2)
   }
 
@@ -542,7 +578,10 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
   await flaps.scrollIntoViewIfNeeded()
   const layout = await flaps.evaluate(element => ({
     container: element.getBoundingClientRect().toJSON(),
-    children: [...element.children].map(child => child.getBoundingClientRect().toJSON()),
+    children: [...element.children].map(child => ({
+      top: child.offsetTop,
+      right: child.getBoundingClientRect().right,
+    })),
   }))
   expect(new Set(layout.children.map(box => Math.round(box.top))).size).toBe(1)
   expect(layout.children.at(-1).right).toBeLessThanOrEqual(layout.container.right + 1)

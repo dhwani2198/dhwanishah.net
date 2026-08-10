@@ -363,6 +363,7 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     html.site-home .project-scroll-panel {
+        --project-visual-offset-y: 0px;
         box-sizing: border-box !important;
         height: 100dvh !important;
         min-height: 100dvh !important;
@@ -389,7 +390,7 @@ body.site-home { overscroll-behavior-y: contain; }
         flex-shrink: 0 !important;
         max-width: 100% !important;
         opacity: 0 !important;
-        transform: translate3d(0, 20px, 0) !important;
+        transform: translate3d(0, calc(20px + var(--project-visual-offset-y)), 0) !important;
         transition: opacity .4s ease-out, transform .5s cubic-bezier(.22, 1, .36, 1) !important;
         will-change: opacity, transform !important;
         backface-visibility: hidden !important;
@@ -435,12 +436,12 @@ body.site-home { overscroll-behavior-y: contain; }
 
     html.site-home .project-scroll-panel.is-active > * {
         opacity: 1 !important;
-        transform: translateY(0) !important;
+        transform: translate3d(0, var(--project-visual-offset-y), 0) !important;
     }
 
     html.site-home .project-scroll-panel[data-project-revealed="true"] > * {
         opacity: 1 !important;
-        transform: translateY(0) !important;
+        transform: translate3d(0, var(--project-visual-offset-y), 0) !important;
     }
 
     html.site-home .project-scroll-panel > :last-child {
@@ -505,6 +506,17 @@ body.site-home { overscroll-behavior-y: contain; }
     html.site-home [data-framer-name="Arch portfolio section"] .framer-1cszixz,
     html.site-home [data-framer-name="Arch portfolio section"] .framer-r4cse6 {
         left: 0 !important;
+    }
+
+    html.site-home [data-framer-name="curalink section"] .framer-1cnb6ar {
+        translate: 0 -2px !important;
+        transition: none !important;
+    }
+
+    html.site-home [data-framer-name="Arch portfolio section"] .framer-1cszixz,
+    html.site-home [data-framer-name="Arch portfolio section"] .framer-r4cse6 {
+        translate: 0 -1px !important;
+        transition: none !important;
     }
 
     body.site-home .portfolio-meta-footer {
