@@ -3,7 +3,7 @@ import { createServer } from "node:http"
 import { extname, join, normalize } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const root = fileURLToPath(new URL("../site/", import.meta.url))
+const root = fileURLToPath(new URL("../", import.meta.url))
 const port = Number(process.env.PORT || 4173)
 
 const types = {
