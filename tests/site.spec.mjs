@@ -296,7 +296,7 @@ for (const route of routes) {
   })
 }
 
-test("mobile navigation opens as a full-screen menu", async ({ page }) => {
+test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/")
   const mobileHeader = page.locator(".site-nav-shell").first()
@@ -319,12 +319,12 @@ test("mobile navigation opens as a full-screen menu", async ({ page }) => {
   expect(Math.abs(openMenuBox.x)).toBeLessThan(1)
   expect(Math.abs(openMenuBox.y)).toBeLessThan(1)
   expect(Math.abs(openMenuBox.width - 390)).toBeLessThan(1)
-  expect(Math.abs(openMenuBox.height - 844)).toBeLessThan(1)
+  expect(Math.abs(openMenuBox.height - 243)).toBeLessThan(1)
   expect(Math.abs(menuLinksBox.x - 20)).toBeLessThan(1)
-  expect(Math.abs(projectLinkBox.x - 20)).toBeLessThan(1)
   expect(projectLinkBox.width).toBeGreaterThanOrEqual(350)
+  await expect(openMenu.getByRole("link", { name: "Projects", exact: true })).toHaveCSS("font-size", "15px")
   for (const option of await menuLinks.locator('[data-framer-component-type="RichTextContainer"]').all()) {
-    expect((await option.boundingBox()).height).toBeGreaterThanOrEqual(57.9)
+    expect((await option.boundingBox()).height).toBeGreaterThanOrEqual(39.9)
   }
 
   await openMenu.getByRole("link", { name: "Projects", exact: true }).click()
@@ -404,7 +404,29 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     if (tagBoxes.length) {
       expect(Math.abs(Math.min(...tagBoxes.map(box => box.x)) - textBox.x)).toBeLessThan(1)
     }
+    const greyTags = await content.evaluate(element => [...element.querySelectorAll("div")]
+      .filter(tag => {
+        const box = tag.getBoundingClientRect()
+        return getComputedStyle(tag).backgroundColor === "rgb(31, 31, 31)" && box.width > 20
+      })
+      .map(tag => tag.getBoundingClientRect().toJSON())
+    )
+    if (greyTags.length) {
+      expect(Math.abs(Math.min(...greyTags.map(box => box.x)) - textBox.x)).toBeLessThan(1)
+    }
   }
+
+  const lastPanel = page.locator(".project-scroll-panel").last()
+  await lastPanel.scrollIntoViewIfNeeded()
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(await lastPanel.evaluate(panel => panel.offsetTop))
+  const boundary = await lastPanel.evaluate(panel => ({
+    panelBottom: panel.getBoundingClientRect().bottom + scrollY,
+    pageBottom: document.documentElement.scrollHeight,
+    maxScroll: document.documentElement.scrollHeight - innerHeight,
+    panelTop: panel.getBoundingClientRect().top + scrollY,
+  }))
+  expect(Math.abs(boundary.panelBottom - boundary.pageBottom)).toBeLessThan(1)
+  expect(Math.abs(boundary.panelTop - boundary.maxScroll)).toBeLessThan(1)
 })
 
 test("mobile About connect animation stays on one line", async ({ page }) => {
@@ -445,6 +467,22 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
       ?.getBoundingClientRect()
     return hero && yesterday ? yesterday.top - hero.bottom : null
   })).toBeLessThanOrEqual(25)
+  const aboutSpacing = await page.evaluate(() => {
+    const visibleText = label => [...document.querySelectorAll('[data-framer-component-type="RichTextContainer"]')]
+      .find(element => element.textContent.trim() === label && getComputedStyle(element).display !== "none")
+    const tomorrowParagraph = visibleText("TOMORROW")?.nextElementSibling?.getBoundingClientRect()
+    const everyday = visibleText("EVERYDAY")?.getBoundingClientRect()
+    const viewMore = visibleText("View more")?.getBoundingClientRect()
+    const awards = visibleText("AWARDS")?.getBoundingClientRect()
+    return {
+      tomorrowToEveryday: everyday.top - tomorrowParagraph.bottom,
+      viewMoreToAwards: awards.top - viewMore.bottom,
+    }
+  })
+  expect(aboutSpacing.tomorrowToEveryday).toBeGreaterThanOrEqual(20)
+  expect(aboutSpacing.tomorrowToEveryday).toBeLessThanOrEqual(30)
+  expect(aboutSpacing.viewMoreToAwards).toBeGreaterThanOrEqual(25)
+  expect(aboutSpacing.viewMoreToAwards).toBeLessThanOrEqual(35)
   await expect(page.getByRole("link", { name: "LinkedIn", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
   await expect(page.getByRole("link", { name: "Instagram", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
 })

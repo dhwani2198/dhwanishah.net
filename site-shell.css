@@ -336,9 +336,10 @@ body.site-home { overscroll-behavior-y: contain; }
     html.site-home {
         --home-edge-x: 20px !important;
         --home-content-gutter: 20px !important;
+        overscroll-behavior-y: none !important;
     }
     body.site-home {
-        overscroll-behavior-y: contain;
+        overscroll-behavior-y: none !important;
         touch-action: pan-y;
     }
 
@@ -351,6 +352,11 @@ body.site-home { overscroll-behavior-y: contain; }
         min-height: 100dvh !important;
         scroll-snap-align: start !important;
         scroll-snap-stop: always !important;
+    }
+
+    html.site-home .framer-Rkf84 {
+        height: auto !important;
+        min-height: 0 !important;
     }
 
     html.site-home .project-scroll-panel {
@@ -460,6 +466,23 @@ body.site-home { overscroll-behavior-y: contain; }
     html.site-home .project-scroll-panel > :last-child > :nth-child(3) { order: 1 !important; }
     html.site-home .project-scroll-panel > :last-child > :nth-child(n + 4) { order: 3 !important; }
 
+    html.site-home [data-framer-name="tally section"] .framer-a9ujo6,
+    html.site-home [data-framer-name="sprint x section"] .framer-1uef7b5 {
+        height: min-content !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+    }
+
+    html.site-home [data-framer-name="sprint x section"] > :last-child > :not(:first-child) {
+        margin-top: 31px !important;
+    }
+
+    html.site-home [data-framer-name="curalink section"] .framer-1cnb6ar,
+    html.site-home [data-framer-name="Arch portfolio section"] .framer-1cszixz,
+    html.site-home [data-framer-name="Arch portfolio section"] .framer-r4cse6 {
+        left: 0 !important;
+    }
+
     body.site-home .portfolio-meta-footer {
         position: fixed !important;
         z-index: 1;
@@ -507,8 +530,9 @@ body.site-home { overscroll-behavior-y: contain; }
         bottom: auto !important;
         left: calc(-1 * var(--site-edge-x)) !important;
         width: 100vw !important;
-        height: 100dvh !important;
-        padding: var(--site-edge-y) var(--site-edge-x) !important;
+        height: 243px !important;
+        min-height: 0 !important;
+        padding: 20px var(--site-edge-x) !important;
         border: 0 !important;
         border-radius: 0 !important;
         background: #000 !important;
@@ -546,12 +570,12 @@ body.site-home { overscroll-behavior-y: contain; }
         max-width: none !important;
         height: auto !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 10px 0 0 !important;
         display: flex !important;
         flex-direction: column !important;
-        align-items: flex-start !important;
-        justify-content: center !important;
-        gap: 10px !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0 !important;
         border-radius: 0 !important;
         background: transparent !important;
         box-shadow: none !important;
@@ -563,25 +587,26 @@ body.site-home { overscroll-behavior-y: contain; }
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec [data-framer-component-type="RichTextContainer"],
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec .framer-text {
         width: 100% !important;
-        text-align: left !important;
+        text-align: center !important;
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec [data-framer-component-type="RichTextContainer"] {
-        min-height: 58px !important;
+        min-height: 40px !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: flex-start !important;
+        justify-content: center !important;
     }
 
     .site-nav-shell .framer-7EQCV[data-framer-name="Phone"] .framer-1v617ec a {
         display: flex !important;
         width: 100% !important;
-        min-height: 58px !important;
+        min-height: 40px !important;
+        justify-content: center !important;
         align-items: center !important;
         color: #fff !important;
-        font-size: clamp(34px, 10vw, 44px) !important;
-        line-height: 1 !important;
-        letter-spacing: -.04em !important;
+        font-size: 15px !important;
+        line-height: 1.3 !important;
+        letter-spacing: -.01em !important;
     }
 
     .framer-AStPX .framer-1wfbg45 {
@@ -591,6 +616,15 @@ body.site-home { overscroll-behavior-y: contain; }
     .framer-AStPX .framer-1wmiitu {
         justify-content: flex-start !important;
         padding-top: 31px !important;
+    }
+
+    .framer-AStPX .framer-1vz9cvd {
+        margin-bottom: -24px !important;
+    }
+
+    .framer-AStPX .framer-1vlx344 {
+        height: 10px !important;
+        min-height: 10px !important;
     }
 }
 
