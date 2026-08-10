@@ -627,16 +627,42 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     .framer-AStPX .framer-1vz9cvd {
-        margin-bottom: -34px !important;
+        margin-bottom: 51px !important;
+    }
+
+    .framer-AStPX .framer-o0u3ak,
+    .framer-AStPX .framer-8bda5g,
+    .framer-AStPX .framer-8bda5g .framer-text {
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+    }
+
+    .framer-AStPX .framer-8bda5g br {
+        display: none !important;
     }
 
     .framer-AStPX .framer-1vlx344 {
-        height: 50px !important;
-        min-height: 50px !important;
+        height: 82px !important;
+        min-height: 82px !important;
     }
 
     html.site-home .project-progress {
-        right: 6px !important;
+        right: 0 !important;
+        width: 20px !important;
+        padding: 8px 0 !important;
+        box-sizing: border-box !important;
+        align-items: center !important;
+        border-radius: 12px 0 0 12px;
+        background: #000;
+    }
+
+    body.site-home .site-nav-shell {
+        z-index: 8 !important;
+    }
+
+    body.site-home .portfolio-meta-footer {
+        z-index: 7 !important;
     }
 }
 

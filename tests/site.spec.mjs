@@ -429,6 +429,8 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   }
 
   const activeMediaBox = await page.locator(".project-scroll-panel").last().locator(":scope > *").first().boundingBox()
+  const progressBox = await page.locator(".project-progress").boundingBox()
+  expect(progressBox.x).toBeGreaterThanOrEqual(activeMediaBox.x + activeMediaBox.width)
   for (const dot of await page.locator(".project-progress a").all()) {
     const dotBox = await dot.boundingBox()
     expect(dotBox.x).toBeGreaterThan(activeMediaBox.x + activeMediaBox.width)
@@ -436,6 +438,10 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
 
   const lastPanel = page.locator(".project-scroll-panel").last()
   await lastPanel.scrollIntoViewIfNeeded()
+  await expect(page.locator(".site-nav-shell").first()).toBeInViewport()
+  await expect(page.locator(".portfolio-meta-footer")).toBeInViewport()
+  expect(Number(await page.locator(".site-nav-shell").first().evaluate(element => getComputedStyle(element).zIndex))).toBeGreaterThan(2)
+  expect(Number(await page.locator(".portfolio-meta-footer").evaluate(element => getComputedStyle(element).zIndex))).toBeGreaterThan(2)
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(await lastPanel.evaluate(panel => panel.offsetTop))
   const boundary = await lastPanel.evaluate(panel => ({
     panelBottom: panel.getBoundingClientRect().bottom + scrollY,
@@ -492,15 +498,19 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
     const everyday = visibleText("EVERYDAY")?.getBoundingClientRect()
     const viewMore = visibleText("View more")?.getBoundingClientRect()
     const awards = visibleText("AWARDS")?.getBoundingClientRect()
+    const today = visibleText("TODAY")?.getBoundingClientRect()
+    const portrait = [...document.querySelectorAll("img")]
+      .map(image => image.getBoundingClientRect())
+      .filter(box => box.right > 0 && box.left < innerWidth && box.bottom <= today.top)
+      .sort((a, b) => b.bottom - a.bottom)[0]
     return {
+      referenceGap: today.top - portrait.bottom,
       tomorrowToEveryday: everyday.top - tomorrowParagraph.bottom,
       viewMoreToAwards: awards.top - viewMore.bottom,
     }
   })
-  expect(aboutSpacing.tomorrowToEveryday).toBeGreaterThanOrEqual(10)
-  expect(aboutSpacing.tomorrowToEveryday).toBeLessThanOrEqual(20)
-  expect(aboutSpacing.viewMoreToAwards).toBeGreaterThanOrEqual(65)
-  expect(aboutSpacing.viewMoreToAwards).toBeLessThanOrEqual(75)
+  expect(Math.abs(aboutSpacing.tomorrowToEveryday - aboutSpacing.referenceGap)).toBeLessThanOrEqual(2)
+  expect(Math.abs(aboutSpacing.viewMoreToAwards - aboutSpacing.referenceGap)).toBeLessThanOrEqual(2)
   await expect(page.getByRole("link", { name: "LinkedIn", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
   await expect(page.getByRole("link", { name: "Instagram", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
 })
