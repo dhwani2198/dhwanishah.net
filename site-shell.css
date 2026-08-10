@@ -291,6 +291,86 @@ body.site-home { overscroll-behavior-y: contain; }
     .project-scroll-panel { padding-block: 68px 32px !important; }
     .portfolio-meta-footer { font-size: 11px; }
     .project-progress { gap: 8px; }
+
+    html.site-home { scroll-snap-type: none !important; }
+
+    .framer-Rkf84 [data-framer-name="section header"] {
+        display: none !important;
+    }
+
+    html.site-home .framer-Rkf84 .framer-1cf70bh {
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        scroll-snap-align: none !important;
+    }
+
+    html.site-home .project-scroll-panel {
+        box-sizing: border-box !important;
+        height: auto !important;
+        min-height: 100dvh !important;
+        padding: 92px 12px 76px !important;
+        gap: 24px !important;
+        justify-content: center !important;
+        overflow: visible !important;
+        scroll-snap-align: none !important;
+        scroll-snap-stop: normal !important;
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+        will-change: auto !important;
+    }
+
+    html.site-home .project-scroll-panel > * {
+        flex-shrink: 0 !important;
+        max-width: 100% !important;
+        transform: none !important;
+    }
+
+    html.site-home .project-scroll-panel > :last-child {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    body.site-home .portfolio-meta-footer {
+        position: relative !important;
+        z-index: 6;
+        order: 999 !important;
+        flex: none !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        width: calc(100vw - (2 * var(--site-edge-x))) !important;
+        margin: 0 auto !important;
+        padding: 0 0 var(--site-edge-y) !important;
+        transform: none;
+    }
+
+    .site-nav-shell .framer-ker4xb {
+        align-self: stretch !important;
+        flex: 1 1 auto !important;
+        width: auto !important;
+        max-width: none !important;
+        justify-content: space-between !important;
+    }
+
+    .site-nav-shell .framer-9sf85-container {
+        flex: 0 0 34px !important;
+        width: 34px !important;
+        height: 34px !important;
+        border: 1px solid rgba(255, 255, 255, .2);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, .11);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 8px 24px rgba(0, 0, 0, .2);
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        overflow: hidden;
+    }
+
+    .site-nav-shell .framer-9sf85-container [data-framer-name="open"] {
+        width: 100% !important;
+        height: 100% !important;
+    }
 }
 
 @media (min-width: 810px) {

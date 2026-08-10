@@ -299,7 +299,46 @@ for (const route of routes) {
 test("mobile navigation opens and exposes its links", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/")
+  const mobileHeader = page.locator(".site-nav-shell").first()
+  const menuButton = mobileHeader.locator('.framer-9sf85-container')
+  const headerBox = await mobileHeader.boundingBox()
+  const menuBox = await menuButton.boundingBox()
+  expect(Math.abs(menuBox.x + menuBox.width - (headerBox.x + headerBox.width))).toBeLessThan(1)
+  await expect(menuButton).toHaveCSS("background-color", "rgba(255, 255, 255, 0.11)")
+  expect(await menuButton.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toContain("blur")
   await page.locator('[data-framer-name="open"]').first().click()
   await expect(page.getByRole("link", { name: "About", exact: true }).last()).toBeVisible()
   await expect(page.getByRole("link", { name: "Resume", exact: true }).last()).toBeVisible()
+})
+
+test("mobile homepage scrolls naturally without overlapping content or a floating footer", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 667 })
+  await page.goto("/")
+
+  await expect(page.locator('[data-framer-name="section header"]')).toBeHidden()
+  await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "none")
+  const footer = page.locator(".portfolio-meta-footer")
+  await expect(footer).toHaveCSS("position", "relative")
+  const footerPlacement = await footer.locator("span").evaluate(element => ({
+    bottom: element.getBoundingClientRect().bottom + scrollY,
+    pageHeight: document.documentElement.scrollHeight,
+  }))
+  expect(Math.abs(footerPlacement.pageHeight - footerPlacement.bottom - 20)).toBeLessThan(2)
+
+  const panels = page.locator(".project-scroll-panel")
+  for (const panel of await panels.all()) {
+    await expect(panel).toHaveCSS("transform", "none")
+    const layout = await panel.evaluate(element => {
+      const children = [...element.children].filter(child => getComputedStyle(child).display !== "none")
+      const boxes = children.map(child => child.getBoundingClientRect())
+      return {
+        panel: element.getBoundingClientRect().toJSON(),
+        children: boxes.map(box => box.toJSON()),
+      }
+    })
+    layout.children.slice(1).forEach((box, index) => {
+      expect(box.top).toBeGreaterThanOrEqual(layout.children[index].bottom - 1)
+    })
+    expect(layout.children.at(-1).bottom).toBeLessThanOrEqual(layout.panel.bottom + 1)
+  }
 })
