@@ -385,6 +385,8 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   expect(Math.abs(homeTitleBox.x - 20)).toBeLessThanOrEqual(2)
 
   await page.goto("/")
+  const descriptionSelectors = [".framer-12hj3tg", ".framer-19gs733", ".framer-1866ev0", ".framer-1jizzz6"]
+  let projectIndex = 0
   for (const panel of await page.locator(".project-scroll-panel").all()) {
     await panel.scrollIntoViewIfNeeded()
     await expect(panel).toHaveClass(/is-active/)
@@ -419,7 +421,17 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     )
     if (greyTags.length) {
       expect(Math.abs(Math.min(...greyTags.map(box => box.x)) - textBox.x)).toBeLessThan(1)
+      const descriptionBox = await panel.locator(descriptionSelectors[projectIndex]).boundingBox()
+      expect(Math.min(...greyTags.map(box => box.y)) - (descriptionBox.y + descriptionBox.height)).toBeGreaterThanOrEqual(18)
+      expect(Math.min(...greyTags.map(box => box.y)) - (descriptionBox.y + descriptionBox.height)).toBeLessThanOrEqual(24)
     }
+    projectIndex += 1
+  }
+
+  const activeMediaBox = await page.locator(".project-scroll-panel").last().locator(":scope > *").first().boundingBox()
+  for (const dot of await page.locator(".project-progress a").all()) {
+    const dotBox = await dot.boundingBox()
+    expect(dotBox.x).toBeGreaterThan(activeMediaBox.x + activeMediaBox.width)
   }
 
   const lastPanel = page.locator(".project-scroll-panel").last()
@@ -487,8 +499,8 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
   })
   expect(aboutSpacing.tomorrowToEveryday).toBeGreaterThanOrEqual(10)
   expect(aboutSpacing.tomorrowToEveryday).toBeLessThanOrEqual(20)
-  expect(aboutSpacing.viewMoreToAwards).toBeGreaterThanOrEqual(45)
-  expect(aboutSpacing.viewMoreToAwards).toBeLessThanOrEqual(55)
+  expect(aboutSpacing.viewMoreToAwards).toBeGreaterThanOrEqual(65)
+  expect(aboutSpacing.viewMoreToAwards).toBeLessThanOrEqual(75)
   await expect(page.getByRole("link", { name: "LinkedIn", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
   await expect(page.getByRole("link", { name: "Instagram", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
 })

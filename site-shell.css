@@ -387,9 +387,11 @@ body.site-home { overscroll-behavior-y: contain; }
         flex-shrink: 0 !important;
         max-width: 100% !important;
         opacity: 0 !important;
-        transform: translateY(28px) !important;
-        transition: opacity .45s ease-out, transform .55s cubic-bezier(.22, 1, .36, 1) !important;
+        transform: translate3d(0, 20px, 0) !important;
+        transition: opacity .4s ease-out, transform .5s cubic-bezier(.22, 1, .36, 1) !important;
         will-change: opacity, transform !important;
+        backface-visibility: hidden !important;
+        -webkit-backface-visibility: hidden !important;
     }
 
     html.site-home .project-scroll-panel > :first-child {
@@ -441,7 +443,7 @@ body.site-home { overscroll-behavior-y: contain; }
         flex-flow: row wrap !important;
         align-content: flex-start !important;
         align-items: flex-start !important;
-        gap: 8px !important;
+        gap: 20px !important;
     }
 
     html.site-home .project-scroll-panel > :last-child > :first-child {
@@ -629,8 +631,12 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     .framer-AStPX .framer-1vlx344 {
-        height: 30px !important;
-        min-height: 30px !important;
+        height: 50px !important;
+        min-height: 50px !important;
+    }
+
+    html.site-home .project-progress {
+        right: 6px !important;
     }
 }
 
