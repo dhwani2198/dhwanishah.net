@@ -312,7 +312,7 @@ test("mobile navigation opens and exposes its links", async ({ page }) => {
   const openMenu = mobileHeader.locator('[data-framer-name="Phone"]')
   await expect(openMenu).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
   const menuLinks = openMenu.locator(".framer-1v617ec")
-  await expect(menuLinks).toHaveCSS("background-color", "rgba(30, 90, 180, 0.22)")
+  await expect(menuLinks).toHaveCSS("background-color", "rgba(20, 20, 20, 0.88)")
   expect(await menuLinks.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toContain("blur")
   const openMenuBox = await openMenu.boundingBox()
   const menuLinksBox = await menuLinks.boundingBox()
@@ -332,19 +332,23 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   await page.goto("/")
 
   await expect(page.locator('[data-framer-name="section header"]')).toBeHidden()
-  await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "none")
+  await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "y mandatory")
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
 
   const panels = page.locator(".project-scroll-panel")
-  await expect(panels.first()).toHaveCSS("opacity", "0")
-  expect(await panels.first().evaluate(element => getComputedStyle(element).transform)).not.toBe("none")
+  const firstProjectContent = panels.first().locator(":scope > *").first()
+  await expect(panels.first()).toHaveCSS("transform", "none")
+  await expect(firstProjectContent).toHaveCSS("opacity", "0")
+  expect(await firstProjectContent.evaluate(element => getComputedStyle(element).transform)).not.toBe("none")
   for (const panel of await panels.all()) {
     await panel.scrollIntoViewIfNeeded()
     await expect(panel).toHaveClass(/is-active/)
-    await expect(panel).toHaveCSS("opacity", "1")
-    await expect(panel).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)")
+    await expect(panel).toHaveCSS("scroll-snap-align", "start")
+    const content = panel.locator(":scope > *").first()
+    await expect(content).toHaveCSS("opacity", "1")
+    await expect(content).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)")
     const layout = await panel.evaluate(element => {
       const children = [...element.children].filter(child => getComputedStyle(child).display !== "none")
       const boxes = children.map(child => child.getBoundingClientRect())
@@ -377,10 +381,27 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
     const certification = [...document.querySelectorAll(".framer-1d1zcd5")]
       .find(element => getComputedStyle(element).display !== "none")
     const flaps = document.querySelector(".about-connect-flaps")
-    if (!certification || !flaps) return false
-    const gap = flaps.getBoundingClientRect().top - certification.getBoundingClientRect().bottom
-    return gap >= 20 && gap <= 40
+    const actions = document.querySelector(".about-connect-actions")
+    const footer = document.querySelector(".about-connect-meta")
+    if (!certification || !flaps || !actions || !footer) return false
+    const gapAbove = flaps.getBoundingClientRect().top - certification.getBoundingClientRect().bottom
+    const gapBelow = footer.getBoundingClientRect().top - actions.getBoundingClientRect().bottom
+    return Math.abs(gapAbove - gapBelow) <= 20
   })).toBe(true)
+  await expect.poll(() => page.evaluate(() => {
+    const hero = document.querySelector('[data-framer-name="VR Dashboard"]')?.getBoundingClientRect()
+    const yesterday = [...document.querySelectorAll("h6")]
+      .find(element => element.textContent.trim() === "YESTERDAY" && getComputedStyle(element).display !== "none")
+      ?.getBoundingClientRect()
+    return hero && yesterday ? yesterday.top - hero.bottom : null
+  })).toBeGreaterThanOrEqual(15)
+  await expect.poll(() => page.evaluate(() => {
+    const hero = document.querySelector('[data-framer-name="VR Dashboard"]')?.getBoundingClientRect()
+    const yesterday = [...document.querySelectorAll("h6")]
+      .find(element => element.textContent.trim() === "YESTERDAY" && getComputedStyle(element).display !== "none")
+      ?.getBoundingClientRect()
+    return hero && yesterday ? yesterday.top - hero.bottom : null
+  })).toBeLessThanOrEqual(25)
   await expect(page.getByRole("link", { name: "LinkedIn", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
   await expect(page.getByRole("link", { name: "Instagram", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
 })
