@@ -330,7 +330,9 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await openMenu.getByRole("link", { name: "Projects", exact: true }).click()
   await expect(page).toHaveURL(/\/#projects$/)
   await expect(openMenu).toHaveCount(0)
+  await expect(page.locator("html")).toHaveClass(/project-scroll-in-flight/)
   await expect.poll(() => page.locator("#projects").evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
+  await expect(page.locator("html")).not.toHaveClass(/project-scroll-in-flight/, { timeout: 1_000 })
 })
 
 test("mobile homepage keeps desktop-style panel scrolling and project animation", async ({ page }) => {
@@ -395,6 +397,10 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     expect(imageBox.y).toBeGreaterThanOrEqual(mediaBox.y - 2)
     expect(imageBox.x + imageBox.width).toBeLessThanOrEqual(mediaBox.x + mediaBox.width + 2)
     expect(imageBox.y + imageBox.height).toBeLessThanOrEqual(mediaBox.y + mediaBox.height + 2)
+    const ratioDelta = await image.evaluate((element, frame) =>
+      Math.abs(element.naturalWidth / element.naturalHeight - frame.width / frame.height)
+    , mediaBox)
+    expect(ratioDelta).toBeLessThan(0.01)
 
     const content = panel.locator(":scope > :last-child")
     const textBox = await content.locator(":scope > :first-child").boundingBox()
@@ -479,10 +485,10 @@ test("mobile About connect animation stays on one line", async ({ page }) => {
       viewMoreToAwards: awards.top - viewMore.bottom,
     }
   })
-  expect(aboutSpacing.tomorrowToEveryday).toBeGreaterThanOrEqual(20)
-  expect(aboutSpacing.tomorrowToEveryday).toBeLessThanOrEqual(30)
-  expect(aboutSpacing.viewMoreToAwards).toBeGreaterThanOrEqual(25)
-  expect(aboutSpacing.viewMoreToAwards).toBeLessThanOrEqual(35)
+  expect(aboutSpacing.tomorrowToEveryday).toBeGreaterThanOrEqual(10)
+  expect(aboutSpacing.tomorrowToEveryday).toBeLessThanOrEqual(20)
+  expect(aboutSpacing.viewMoreToAwards).toBeGreaterThanOrEqual(45)
+  expect(aboutSpacing.viewMoreToAwards).toBeLessThanOrEqual(55)
   await expect(page.getByRole("link", { name: "LinkedIn", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
   await expect(page.getByRole("link", { name: "Instagram", exact: true }).locator("svg.about-external-icon")).toHaveCount(1)
 })

@@ -11,6 +11,7 @@
     let lastFlapSoundAt = 0
     let scheduled = false
     let projectHashHandled = false
+    let projectScrollTimer
 
     function isHomePath(pathname = location.pathname) {
         return pathname === "/" || pathname === "/index.html"
@@ -24,10 +25,21 @@
         for (let element = projects; element; element = element.offsetParent) top += element.offsetTop
         top = Math.max(0, top)
         const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+        const root = document.documentElement
+        clearTimeout(projectScrollTimer)
+        root.classList.toggle("project-scroll-in-flight", behavior === "smooth")
         try {
             window.scrollTo({ top, left: 0, behavior })
         } catch {
             window.scrollTo(0, top)
+        }
+        if (behavior === "smooth") {
+            projectScrollTimer = setTimeout(() => {
+                root.classList.remove("project-scroll-in-flight")
+                if (Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, left: 0, behavior: "auto" })
+            }, 700)
+        } else {
+            root.classList.remove("project-scroll-in-flight")
         }
         if (updateHash && location.hash !== "#projects") history.replaceState(history.state, "", "/#projects")
         return true

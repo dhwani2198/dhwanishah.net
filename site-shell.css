@@ -333,6 +333,7 @@ body.site-home { overscroll-behavior-y: contain; }
     .project-progress { gap: 8px; }
 
     html.site-home { scroll-snap-type: y mandatory !important; }
+    html.site-home.project-scroll-in-flight { scroll-snap-type: none !important; }
     html.site-home {
         --home-edge-x: 20px !important;
         --home-content-gutter: 20px !important;
@@ -399,6 +400,11 @@ body.site-home { overscroll-behavior-y: contain; }
         aspect-ratio: 4 / 3;
         position: relative !important;
     }
+
+    html.site-home [data-framer-name="tally section"] > :first-child { aspect-ratio: 4032 / 3024; }
+    html.site-home [data-framer-name="sprint x section"] > :first-child { aspect-ratio: 7395 / 5550; }
+    html.site-home [data-framer-name="curalink section"] > :first-child { aspect-ratio: 8533 / 6433; }
+    html.site-home [data-framer-name="Arch portfolio section"] > :first-child { aspect-ratio: 2698 / 1888; }
 
     html.site-home .project-scroll-panel > :first-child [data-framer-name="Placeholder"],
     html.site-home .project-scroll-panel > :first-child [data-framer-background-image-wrapper] {
@@ -619,25 +625,25 @@ body.site-home { overscroll-behavior-y: contain; }
     }
 
     .framer-AStPX .framer-1vz9cvd {
-        margin-bottom: -24px !important;
+        margin-bottom: -34px !important;
     }
 
     .framer-AStPX .framer-1vlx344 {
-        height: 10px !important;
-        min-height: 10px !important;
+        height: 30px !important;
+        min-height: 30px !important;
     }
 }
 
 @media (max-width: 809.98px) and (max-height: 720px) {
     html.site-home .project-scroll-panel {
-        padding: 58px 0 34px !important;
-        gap: 18px !important;
+        padding: 24px 0 20px !important;
+        gap: 16px !important;
     }
 
     html.site-home .project-scroll-panel > :first-child {
-        height: 230px !important;
-        min-height: 230px !important;
-        max-height: 230px !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
     }
 }
 
