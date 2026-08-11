@@ -7,41 +7,30 @@
     const homePanelNames = ["tally section", "sprint x section", "curalink section", "Arch portfolio section"]
     const observedHomePanels = new WeakSet()
     const homePanelVisibility = new WeakMap()
-    const revealedMobileHomePanels = new Set()
     let flapSoundPool
     let lastFlapSoundAt = 0
     let scheduled = false
     let projectHashHandled = false
-    let projectScrollTimer
-    let panelCenteringFrame
+    const viewportContent = "width=device-width, initial-scale=1.0, viewport-fit=cover"
 
     function isHomePath(pathname = location.pathname) {
         return pathname === "/" || pathname === "/index.html"
+    }
+
+    function normalizeViewport() {
+        const viewport = document.querySelector('meta[name="viewport"]')
+        if (viewport && viewport.content !== viewportContent) viewport.content = viewportContent
     }
 
     function scrollToProjects(updateHash = true) {
         const projects = document.getElementById("projects")
         if (!projects) return false
 
-        let top = 0
-        for (let element = projects; element; element = element.offsetParent) top += element.offsetTop
-        top = Math.max(0, top)
         const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-        const root = document.documentElement
-        clearTimeout(projectScrollTimer)
-        root.classList.toggle("project-scroll-in-flight", behavior === "smooth")
         try {
-            window.scrollTo({ top, left: 0, behavior })
+            projects.scrollIntoView({ behavior, block: "start" })
         } catch {
-            window.scrollTo(0, top)
-        }
-        if (behavior === "smooth") {
-            projectScrollTimer = setTimeout(() => {
-                root.classList.remove("project-scroll-in-flight")
-                if (Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, left: 0, behavior: "auto" })
-            }, 700)
-        } else {
-            root.classList.remove("project-scroll-in-flight")
+            projects.scrollIntoView()
         }
         if (updateHash && location.hash !== "#projects") history.replaceState(history.state, "", "/#projects")
         return true
@@ -79,62 +68,10 @@
         }
     }
 
-    function centerVisibleMobileProjectContent() {
-        panelCenteringFrame = undefined
-        if (!matchMedia("(max-width: 809.98px)").matches) return
-
-        document.querySelectorAll(".project-scroll-panel").forEach(panel => {
-            const image = panel.querySelector("img")
-            const textElements = [...(panel.lastElementChild?.querySelectorAll('[data-framer-component-type="RichTextContainer"]') || [])]
-            const visibleElements = [image, ...textElements].filter(element => {
-                if (!element) return false
-                const style = getComputedStyle(element)
-                const box = element.getBoundingClientRect()
-                return style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0
-            })
-            if (!visibleElements.length) return
-
-            const panelBox = panel.getBoundingClientRect()
-            const boxes = visibleElements.map(element => {
-                const directChild = [...panel.children].find(child => child === element || child.contains(element))
-                const transform = directChild ? getComputedStyle(directChild).transform : "none"
-                let translateY = 0
-                if (transform && transform !== "none") {
-                    try { translateY = new DOMMatrixReadOnly(transform).m42 } catch {}
-                }
-                const box = element.getBoundingClientRect()
-                return { top: box.top - translateY, bottom: box.bottom - translateY }
-            })
-            const visualTop = Math.min(...boxes.map(box => box.top))
-            const visualBottom = Math.max(...boxes.map(box => box.bottom))
-            const topSpace = visualTop - panelBox.top
-            const bottomSpace = panelBox.bottom - visualBottom
-            const nextOffset = Math.max(-60, Math.min(60, (bottomSpace - topSpace) / 2))
-            const currentOffset = Number.parseFloat(panel.style.getPropertyValue("--project-visual-offset-y")) || 0
-            if (Math.abs(nextOffset - currentOffset) > .25) {
-                panel.style.setProperty("--project-visual-offset-y", `${nextOffset.toFixed(2)}px`)
-            }
-        })
-    }
-
-    function scheduleMobileProjectCentering() {
-        if (panelCenteringFrame !== undefined) return
-        panelCenteringFrame = requestAnimationFrame(() => requestAnimationFrame(centerVisibleMobileProjectContent))
-    }
-
     const homePanelObserver = new IntersectionObserver(entries => {
-        const keepRevealed = matchMedia("(max-width: 809.98px)").matches
         for (const entry of entries) {
             homePanelVisibility.set(entry.target, entry.intersectionRatio)
             const isActive = entry.isIntersecting && entry.intersectionRatio >= .12
-            if (keepRevealed) {
-                if (isActive) {
-                    revealedMobileHomePanels.add(entry.target.id)
-                    entry.target.dataset.projectRevealed = "true"
-                    entry.target.classList.add("is-active")
-                    scheduleMobileProjectCentering()
-                }
-            }
             entry.target.classList.toggle("is-active", isActive)
         }
         const panels = [...document.querySelectorAll(".project-scroll-panel")]
@@ -322,19 +259,10 @@
         panels.forEach((panel, index) => {
             panel.classList.add("project-scroll-panel")
             panel.id = index === 0 ? "projects" : `project-${index + 1}`
-            if (revealedMobileHomePanels.has(panel.id)) {
-                panel.dataset.projectRevealed = "true"
-                if ((homePanelVisibility.get(panel) || 0) >= .12) panel.classList.add("is-active")
-            }
             if (!observedHomePanels.has(panel)) {
                 observedHomePanels.add(panel)
                 homePanelObserver.observe(panel)
             }
-            panel.querySelectorAll("img").forEach(image => {
-                if (image.dataset.projectCenteringReady) return
-                image.dataset.projectCenteringReady = "true"
-                if (!image.complete) image.addEventListener("load", scheduleMobileProjectCentering, { once: true })
-            })
         })
 
         if (location.hash === "#projects" && !projectHashHandled && panels.length) {
@@ -376,11 +304,11 @@
             panels[0].parentElement.appendChild(meta)
             startLocalClock(clock)
         }
-        scheduleMobileProjectCentering()
     }
 
     function normalizeSiteShell() {
         scheduled = false
+        normalizeViewport()
 
         document.body.classList.toggle("site-home", isHomePath())
         document.documentElement.classList.toggle("site-home", isHomePath())
@@ -434,8 +362,8 @@
     })
     addEventListener("DOMContentLoaded", scheduleNormalization, { once: true })
     addEventListener("load", scheduleNormalization, { once: true })
-    addEventListener("resize", scheduleMobileProjectCentering, { passive: true })
-    document.fonts?.ready.then(scheduleMobileProjectCentering)
+    const viewport = document.querySelector('meta[name="viewport"]')
+    if (viewport) new MutationObserver(normalizeViewport).observe(viewport, { attributes: true, attributeFilter: ["content"] })
     new MutationObserver(scheduleNormalization).observe(document.getElementById("main"), {
         attributes: true,
         attributeFilter: ["href", "class"],

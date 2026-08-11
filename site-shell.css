@@ -338,7 +338,6 @@ body.site-home { overscroll-behavior-y: auto; }
 
     html.site-home { scroll-snap-type: y mandatory !important; }
     html.site-home { scroll-behavior: auto !important; }
-    html.site-home.project-scroll-in-flight { scroll-snap-type: none !important; }
     html.site-home {
         --home-edge-x: 20px !important;
         --home-content-gutter: 20px !important;
@@ -346,7 +345,6 @@ body.site-home { overscroll-behavior-y: auto; }
     }
     body.site-home {
         overscroll-behavior-y: auto !important;
-        touch-action: pan-y;
     }
 
     .framer-Rkf84 [data-framer-name="section header"] {
@@ -354,8 +352,8 @@ body.site-home { overscroll-behavior-y: auto; }
     }
 
     html.site-home .framer-Rkf84 .framer-1cf70bh {
-        height: 100dvh !important;
-        min-height: 100dvh !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
         scroll-snap-align: start !important;
         scroll-snap-stop: normal !important;
     }
@@ -366,10 +364,9 @@ body.site-home { overscroll-behavior-y: auto; }
     }
 
     html.site-home .project-scroll-panel {
-        --project-visual-offset-y: 0px;
         box-sizing: border-box !important;
-        height: 100dvh !important;
-        min-height: 100dvh !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
         padding: 54px 0 !important;
         gap: 24px !important;
         justify-content: center !important;
@@ -393,7 +390,7 @@ body.site-home { overscroll-behavior-y: auto; }
         flex-shrink: 0 !important;
         max-width: 100% !important;
         opacity: 1 !important;
-        transform: translate3d(0, var(--project-visual-offset-y), 0) !important;
+        transform: none !important;
         transition: none !important;
         will-change: auto !important;
         backface-visibility: hidden !important;
@@ -439,12 +436,7 @@ body.site-home { overscroll-behavior-y: auto; }
 
     html.site-home .project-scroll-panel.is-active > * {
         opacity: 1 !important;
-        transform: translate3d(0, var(--project-visual-offset-y), 0) !important;
-    }
-
-    html.site-home .project-scroll-panel[data-project-revealed="true"] > * {
-        opacity: 1 !important;
-        transform: translate3d(0, var(--project-visual-offset-y), 0) !important;
+        transform: none !important;
     }
 
     html.site-home .project-scroll-panel > :last-child {

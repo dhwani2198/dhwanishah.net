@@ -351,12 +351,12 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await openMenu.getByRole("link", { name: "Projects", exact: true }).click()
   await expect(page).toHaveURL(/\/#projects$/)
   await expect(openMenu).toHaveCount(0)
-  await expect(page.locator("html")).toHaveClass(/project-scroll-in-flight/)
+  await expect(page.locator("html")).not.toHaveClass(/project-scroll-in-flight/)
   await expect.poll(() => page.locator("#projects").evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
-  await expect(page.locator("html")).not.toHaveClass(/project-scroll-in-flight/, { timeout: 1_000 })
+  await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "y mandatory")
 })
 
-test("mobile homepage keeps desktop-style panel scrolling and project animation", async ({ page }) => {
+test("mobile homepage uses reference-style native viewport snapping", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 667 })
   await page.goto("/")
 
@@ -364,6 +364,7 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
   await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "y mandatory")
   await expect(page.locator("html")).toHaveCSS("scroll-behavior", "auto")
   await expect(page.locator("body")).toHaveCSS("overscroll-behavior-y", "auto")
+  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", "width=device-width, initial-scale=1.0, viewport-fit=cover")
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
@@ -407,9 +408,6 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     await expectFooterAtViewportBottom()
   }
 
-  for (const panel of await panels.all()) {
-    await expect(panel).toHaveAttribute("data-project-revealed", "true")
-  }
   for (let index = 0; index < 3; index += 1) await expect(panels.nth(index)).not.toHaveClass(/is-active/)
   await expect(panels.last()).toHaveClass(/is-active/)
 
@@ -493,15 +491,11 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     await expect(panel).toHaveClass(/is-active/)
     await expect.poll(() => panel.evaluate(element => {
       const panelBox = element.getBoundingClientRect()
-      const visible = [element.querySelector("img"), ...element.lastElementChild.querySelectorAll('[data-framer-component-type="RichTextContainer"]')]
-        .filter(child => {
-          if (!child) return false
-          const box = child.getBoundingClientRect()
-          return getComputedStyle(child).display !== "none" && getComputedStyle(child).visibility !== "hidden" && box.width > 0 && box.height > 0
-        })
+      const children = [...element.children]
+        .filter(child => getComputedStyle(child).display !== "none")
         .map(child => child.getBoundingClientRect())
-      const topSpace = Math.min(...visible.map(box => box.top)) - panelBox.top
-      const bottomSpace = panelBox.bottom - Math.max(...visible.map(box => box.bottom))
+      const topSpace = Math.min(...children.map(box => box.top)) - panelBox.top
+      const bottomSpace = panelBox.bottom - Math.max(...children.map(box => box.bottom))
       return Math.abs(topSpace - bottomSpace)
     })).toBeLessThanOrEqual(2)
     const content = panel.locator(":scope > *")
@@ -511,18 +505,11 @@ test("mobile homepage keeps desktop-style panel scrolling and project animation"
     const alignment = await panel.evaluate(element => ({
       panel: element.getBoundingClientRect().toJSON(),
       children: [...element.children].map(child => child.getBoundingClientRect().toJSON()),
-      visible: [element.querySelector("img"), ...element.lastElementChild.querySelectorAll('[data-framer-component-type="RichTextContainer"]')]
-        .filter(child => {
-          if (!child) return false
-          const box = child.getBoundingClientRect()
-          return getComputedStyle(child).display !== "none" && getComputedStyle(child).visibility !== "hidden" && box.width > 0 && box.height > 0
-        })
-        .map(child => child.getBoundingClientRect().toJSON()),
     }))
     expect(Math.abs(alignment.panel.x - 20)).toBeLessThanOrEqual(2)
     for (const child of alignment.children) expect(Math.abs(child.x - alignment.panel.x)).toBeLessThanOrEqual(2)
-    const topSpace = Math.min(...alignment.visible.map(box => box.top)) - alignment.panel.top
-    const bottomSpace = alignment.panel.bottom - Math.max(...alignment.visible.map(box => box.bottom))
+    const topSpace = Math.min(...alignment.children.map(box => box.top)) - alignment.panel.top
+    const bottomSpace = alignment.panel.bottom - Math.max(...alignment.children.map(box => box.bottom))
     expect(Math.abs(topSpace - bottomSpace)).toBeLessThanOrEqual(2)
   }
 
