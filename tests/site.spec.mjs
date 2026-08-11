@@ -455,6 +455,7 @@ test("project transitions use one consistent split flap sound across mobile tabl
           source: this.currentSrc || this.src,
           volume: this.volume,
           playbackRate: this.playbackRate,
+          projectIndex: Number(this.dataset.projectIndex),
         })
       }
       if (this.dataset.soundTrigger === "project-transition-prime") {
@@ -480,8 +481,14 @@ test("project transitions use one consistent split flap sound across mobile tabl
       await expect(panels.nth(index)).toHaveClass(/is-active/)
       await expect.poll(() => page.evaluate(() => window.__projectTransitionSoundEvents.length)).toBe(index + 1)
     }
+    for (let index = 2; index >= 0; index -= 1) {
+      await panels.nth(index).evaluate(element => element.scrollIntoView({ block: "start", behavior: "instant" }))
+      await expect(panels.nth(index)).toHaveClass(/is-active/)
+      await expect.poll(() => page.evaluate(() => window.__projectTransitionSoundEvents.length)).toBe(7 - index)
+    }
     const events = await page.evaluate(() => window.__projectTransitionSoundEvents)
-    expect(events).toHaveLength(4)
+    expect(events).toHaveLength(7)
+    expect(events.map(event => event.projectIndex)).toEqual([0, 1, 2, 3, 2, 1, 0])
     expect(new Set(events.map(event => event.source)).size).toBe(1)
     for (const event of events) {
       expect(event.volume).toBe(.18)

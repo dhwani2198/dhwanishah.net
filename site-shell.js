@@ -6,12 +6,12 @@
     const smoothPaperPlane = "/assets/assets/paper-plane-low-poly-3d-v7-hq.mp4"
     const homePanelNames = ["tally section", "sprint x section", "curalink section", "Arch portfolio section"]
     const observedHomePanels = new WeakSet()
-    const homePanelVisibility = new WeakMap()
     let flapSoundPool
     let projectTransitionSound
     let projectTransitionSoundUnlocked = false
     let projectTransitionSoundPriming = false
-    let pendingProjectTransitionSound = false
+    let pendingProjectTransitionIndex = -1
+    let homePanelSyncScheduled = false
     let lastFlapSoundAt = 0
     let scheduled = false
     let projectHashHandled = false
@@ -131,21 +131,25 @@
         }, 260)
     }
 
-    const homePanelObserver = new IntersectionObserver(entries => {
-        for (const entry of entries) {
-            homePanelVisibility.set(entry.target, entry.intersectionRatio)
-            const isActive = entry.isIntersecting && entry.intersectionRatio >= .12
-            entry.target.classList.toggle("is-active", isActive)
-        }
+    function syncHomePanelState() {
+        homePanelSyncScheduled = false
         const panels = [...document.querySelectorAll(".project-scroll-panel")]
         if (!panels.length) return
-        const activePanel = panels.reduce((best, panel) =>
-            (homePanelVisibility.get(panel) || 0) > (homePanelVisibility.get(best) || 0) ? panel : best
-        , panels[0])
+        const viewportCenter = innerHeight / 2
+        const activePanel = panels.reduce((best, panel) => {
+            const panelBox = panel.getBoundingClientRect()
+            const bestBox = best.getBoundingClientRect()
+            const panelDistance = Math.abs(panelBox.top + panelBox.height / 2 - viewportCenter)
+            const bestDistance = Math.abs(bestBox.top + bestBox.height / 2 - viewportCenter)
+            return panelDistance < bestDistance ? panel : best
+        }, panels[0])
         const activeIndex = panels.indexOf(activePanel)
-        const activeRatio = homePanelVisibility.get(activePanel) || 0
-        if (activeRatio >= .7 && activeIndex !== lastActiveHomePanelIndex) {
-            playFlapSound("project-transition")
+        const activeBox = activePanel.getBoundingClientRect()
+        const visibleHeight = Math.max(0, Math.min(activeBox.bottom, innerHeight) - Math.max(activeBox.top, 0))
+        const activeRatio = visibleHeight / Math.min(activeBox.height, innerHeight)
+        panels.forEach(panel => panel.classList.toggle("is-active", panel === activePanel && activeRatio >= .12))
+        if (activeRatio >= .5 && activeIndex !== lastActiveHomePanelIndex) {
+            playFlapSound("project-transition", activeIndex)
             lastActiveHomePanelIndex = activeIndex
         }
         const progress = document.querySelector(".project-progress")
@@ -156,7 +160,17 @@
             if (isActive) dot.setAttribute("aria-current", "true")
             else dot.removeAttribute("aria-current")
         })
-    }, { threshold: [.05, .12, .35, .7], rootMargin: "-4% 0px -4%" })
+    }
+
+    function scheduleHomePanelSync() {
+        if (homePanelSyncScheduled) return
+        homePanelSyncScheduled = true
+        requestAnimationFrame(syncHomePanelState)
+    }
+
+    const homePanelObserver = new IntersectionObserver(scheduleHomePanelSync, {
+        threshold: [0, .12, .5, 1],
+    })
 
     function ensureFlapSoundPool() {
         flapSoundPool ||= referenceFlapSounds.map(source => {
@@ -184,9 +198,10 @@
             projectTransitionSound = sound
             projectTransitionSoundPriming = false
             projectTransitionSoundUnlocked = true
-            if (pendingProjectTransitionSound) {
-                pendingProjectTransitionSound = false
-                playFlapSound("project-transition")
+            if (pendingProjectTransitionIndex >= 0) {
+                const projectIndex = pendingProjectTransitionIndex
+                pendingProjectTransitionIndex = -1
+                playFlapSound("project-transition", projectIndex)
             }
         }
         const retry = () => {
@@ -202,7 +217,7 @@
         }
     }
 
-    function playFlapSound(trigger = "split-flap") {
+    function playFlapSound(trigger = "split-flap", projectIndex = -1) {
         const now = performance.now()
         if (trigger !== "project-transition") {
             if (now - lastFlapSoundAt < 65) return
@@ -214,11 +229,12 @@
             ? sounds[0]
             : sounds[Math.floor(Math.random() * sounds.length)]
         if (isProjectTransition && projectTransitionSoundPriming) {
-            pendingProjectTransitionSound = true
+            pendingProjectTransitionIndex = projectIndex
             return
         }
         const sound = isProjectTransition ? source : source.cloneNode()
         sound.dataset.soundTrigger = trigger
+        if (isProjectTransition) sound.dataset.projectIndex = String(projectIndex)
         sound.volume = isProjectTransition ? .18 : .12
         sound.playbackRate = isProjectTransition ? 1 : .96 + Math.random() * .08
         if (isProjectTransition) {
@@ -230,9 +246,9 @@
         if (isProjectTransition && playback?.then) {
             playback.then(() => {
                 projectTransitionSoundUnlocked = true
-                pendingProjectTransitionSound = false
+                if (pendingProjectTransitionIndex === projectIndex) pendingProjectTransitionIndex = -1
             }).catch(() => {
-                pendingProjectTransitionSound = true
+                pendingProjectTransitionIndex = projectIndex
             })
         } else {
             playback?.catch(() => {})
@@ -395,6 +411,7 @@
                 homePanelObserver.observe(panel)
             }
         })
+        scheduleHomePanelSync()
 
         if (location.hash === "#projects" && !projectHashHandled && panels.length) {
             projectHashHandled = true
@@ -494,6 +511,8 @@
     document.addEventListener("pointerup", handleMobileMenuClose, true)
     document.addEventListener("click", handleMobileMenuClose, true)
     document.addEventListener("click", handleProjectLink, true)
+    addEventListener("scroll", scheduleHomePanelSync, { passive: true })
+    addEventListener("resize", scheduleHomePanelSync)
     addEventListener("hashchange", () => {
         projectHashHandled = false
         scheduleNormalization()
