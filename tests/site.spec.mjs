@@ -448,6 +448,7 @@ test("mobile About menu keeps the header fixed in place above page animation", a
 test("project transitions use one consistent split flap sound across mobile tablet and desktop", async ({ page }) => {
   await page.addInitScript(() => {
     window.__projectTransitionSoundEvents = []
+    window.__projectTransitionPrimeEvents = []
     HTMLMediaElement.prototype.play = function () {
       if (this.dataset.soundTrigger === "project-transition") {
         window.__projectTransitionSoundEvents.push({
@@ -455,6 +456,9 @@ test("project transitions use one consistent split flap sound across mobile tabl
           volume: this.volume,
           playbackRate: this.playbackRate,
         })
+      }
+      if (this.dataset.soundTrigger === "project-transition-prime") {
+        window.__projectTransitionPrimeEvents.push({ volume: this.volume })
       }
       return Promise.resolve()
     }
@@ -466,6 +470,9 @@ test("project transitions use one consistent split flap sound across mobile tabl
   ]) {
     await page.setViewportSize(viewport)
     await page.goto("/")
+    await page.locator("body").dispatchEvent("pointerdown", { pointerType: viewport.width < 810 ? "touch" : "mouse" })
+    await expect.poll(() => page.evaluate(() => window.__projectTransitionPrimeEvents.length)).toBe(1)
+    await expect.poll(() => page.evaluate(() => window.__projectTransitionPrimeEvents[0]?.volume)).toBe(.001)
 
     const panels = page.locator(".project-scroll-panel")
     for (let index = 0; index < 4; index += 1) {

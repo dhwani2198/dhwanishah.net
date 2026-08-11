@@ -9,6 +9,9 @@
     const homePanelVisibility = new WeakMap()
     let flapSoundPool
     let projectTransitionSound
+    let projectTransitionSoundUnlocked = false
+    let projectTransitionSoundPriming = false
+    let pendingProjectTransitionSound = false
     let lastFlapSoundAt = 0
     let scheduled = false
     let projectHashHandled = false
@@ -155,31 +158,85 @@
         })
     }, { threshold: [.05, .12, .35, .7], rootMargin: "-4% 0px -4%" })
 
-    function playFlapSound(trigger = "split-flap") {
-        const now = performance.now()
-        if (trigger !== "project-transition") {
-            if (now - lastFlapSoundAt < 65) return
-            lastFlapSoundAt = now
-        }
+    function ensureFlapSoundPool() {
         flapSoundPool ||= referenceFlapSounds.map(source => {
             const audio = new Audio(source)
             audio.preload = "auto"
             audio.volume = .12
             return audio
         })
+        return flapSoundPool
+    }
+
+    function primeProjectTransitionSound() {
+        if (projectTransitionSoundUnlocked || projectTransitionSoundPriming) return
+        const sound = ensureFlapSoundPool()[0]
+        projectTransitionSoundPriming = true
+        sound.dataset.soundTrigger = "project-transition-prime"
+        sound.volume = .001
+        sound.currentTime = 0
+
+        const finish = () => {
+            sound.pause()
+            sound.currentTime = 0
+            sound.volume = .18
+            sound.dataset.soundTrigger = "project-transition"
+            projectTransitionSound = sound
+            projectTransitionSoundPriming = false
+            projectTransitionSoundUnlocked = true
+            if (pendingProjectTransitionSound) {
+                pendingProjectTransitionSound = false
+                playFlapSound("project-transition")
+            }
+        }
+        const retry = () => {
+            projectTransitionSoundPriming = false
+            sound.volume = .18
+        }
+        try {
+            const playback = sound.play()
+            if (playback?.then) playback.then(finish).catch(retry)
+            else finish()
+        } catch {
+            retry()
+        }
+    }
+
+    function playFlapSound(trigger = "split-flap") {
+        const now = performance.now()
+        if (trigger !== "project-transition") {
+            if (now - lastFlapSoundAt < 65) return
+            lastFlapSoundAt = now
+        }
+        const sounds = ensureFlapSoundPool()
         const isProjectTransition = trigger === "project-transition"
         const source = isProjectTransition
-            ? flapSoundPool[0]
-            : flapSoundPool[Math.floor(Math.random() * flapSoundPool.length)]
-        const sound = source.cloneNode()
+            ? sounds[0]
+            : sounds[Math.floor(Math.random() * sounds.length)]
+        if (isProjectTransition && projectTransitionSoundPriming) {
+            pendingProjectTransitionSound = true
+            return
+        }
+        const sound = isProjectTransition ? source : source.cloneNode()
         sound.dataset.soundTrigger = trigger
         sound.volume = isProjectTransition ? .18 : .12
         sound.playbackRate = isProjectTransition ? 1 : .96 + Math.random() * .08
         if (isProjectTransition) {
             projectTransitionSound?.pause()
+            sound.currentTime = 0
             projectTransitionSound = sound
         }
-        sound.play().catch(() => {})
+        const playback = sound.play()
+        if (isProjectTransition && playback?.then) {
+            playback.then(() => {
+                projectTransitionSoundUnlocked = true
+                pendingProjectTransitionSound = false
+            }).catch(() => {
+                pendingProjectTransitionSound = true
+            })
+        } else {
+            playback?.catch(() => {})
+        }
     }
 
     function ensureHomeFlapSound(home) {
@@ -429,6 +486,10 @@
     }
 
     scheduleNormalization()
+    document.addEventListener("pointerdown", primeProjectTransitionSound, { capture: true, passive: true })
+    document.addEventListener("touchstart", primeProjectTransitionSound, { capture: true, passive: true })
+    document.addEventListener("keydown", primeProjectTransitionSound, { capture: true, passive: true })
+    document.addEventListener("wheel", primeProjectTransitionSound, { capture: true, passive: true })
     document.addEventListener("pointerdown", handleMobileMenuClose, true)
     document.addEventListener("pointerup", handleMobileMenuClose, true)
     document.addEventListener("click", handleMobileMenuClose, true)
