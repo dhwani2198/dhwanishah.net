@@ -284,20 +284,22 @@
         if (section.dataset.animated) return
         section.dataset.animated = "true"
         section.classList.add("is-visible")
-        const animated = [...flaps.children].filter(flap => !flap.classList.contains("is-space"))
+        const animated = [...flaps.children]
         const timer = setInterval(() => {
             animated.forEach(flap => {
                 flap.classList.remove("is-flipping")
                 void flap.offsetWidth
                 flap.classList.add("is-flipping")
-                flap.textContent = flapAlphabet[Math.floor(Math.random() * flapAlphabet.length)]
+                flap.textContent = flap.classList.contains("is-space")
+                    ? "\u00a0"
+                    : flapAlphabet[Math.floor(Math.random() * flapAlphabet.length)]
             })
             playFlapSound()
         }, 50)
         setTimeout(() => {
             clearInterval(timer)
             animated.forEach(flap => {
-                flap.textContent = flap.dataset.final
+                flap.textContent = flap.classList.contains("is-space") ? "\u00a0" : flap.dataset.final
                 flap.classList.remove("is-flipping")
             })
         }, 1500)

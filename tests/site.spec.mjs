@@ -294,6 +294,48 @@ test("About ends with the relocated connect section", async ({ page }) => {
   expect(placement.pageHeight - placement.bottom).toBeLessThan(40)
 })
 
+test("About connect tiles keep one palette and flip the blank tile at every breakpoint", async ({ page }) => {
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = () => Promise.resolve()
+  })
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 900, height: 900 },
+    { width: 1440, height: 1000 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto("/about")
+    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
+    const connect = page.locator(".about-connect")
+    await expect(connect).toHaveAttribute("data-animated", "true")
+    const flaps = connect.locator(".about-connect-flap")
+    await expect(connect.locator(".about-connect-flap.is-space")).toHaveCount(1)
+    await expect.poll(() => connect.locator(".about-connect-flap.is-space").evaluate(element => element.classList.contains("is-flipping"))).toBe(true)
+    const flippingPalette = await flaps.evaluateAll(elements => elements.map(element => {
+      const style = getComputedStyle(element)
+      return {
+        background: style.backgroundColor,
+        color: style.color,
+        opacity: style.opacity,
+      }
+    }))
+    expect(new Set(flippingPalette.map(style => style.background)).size).toBe(1)
+    expect(new Set(flippingPalette.map(style => style.color)).size).toBe(1)
+    expect(flippingPalette.every(style => style.opacity === "1")).toBe(true)
+    await page.waitForTimeout(1_550)
+    const finalPalette = await flaps.evaluateAll(elements => elements.map(element => {
+      const style = getComputedStyle(element)
+      return {
+        background: style.backgroundColor,
+        color: style.color,
+        opacity: style.opacity,
+      }
+    }))
+    expect(finalPalette).toEqual(flippingPalette)
+    expect((await flaps.allTextContents()).join("").replace(/\u00a0/g, " ")).toBe("LET'S CONNECT")
+  }
+})
+
 for (const route of routes) {
   test(`${route} uses the shared shell, resume URL, and no legacy footer`, async ({ page }) => {
     await page.goto(route)

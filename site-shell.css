@@ -86,25 +86,32 @@ body:not(.site-home) .site-nav-shell {
 }
 
 .about-connect-flap {
+    --about-flap-background: #1f1f1f;
+    --about-flap-color: #fff;
     width: 40px;
     height: 56px;
     border-radius: 4px;
     display: grid;
     place-items: center;
     overflow: hidden;
-    background: #1f1f1f;
-    color: #fff;
+    background: var(--about-flap-background);
+    color: var(--about-flap-color);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, .2);
     font: 24px/1 ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 
-.about-connect-flap.is-space { width: 40px; color: #000; }
-.about-connect-flap.is-flipping { animation: about-flap-turn .3s ease-in-out; }
+.about-connect-flap.is-space { width: 40px; color: var(--about-flap-color); }
+.about-connect-flap.is-flipping {
+    background: var(--about-flap-background);
+    color: var(--about-flap-color);
+    opacity: 1;
+    animation: about-flap-turn-solid .3s ease-in-out;
+}
 
-@keyframes about-flap-turn {
-    0% { transform: rotateX(0deg); opacity: .5; }
-    50% { transform: rotateX(90deg); opacity: .75; }
-    100% { transform: rotateX(0deg); opacity: 1; }
+@keyframes about-flap-turn-solid {
+    0% { transform: rotateX(0deg); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
 }
 
 .about-connect-actions {

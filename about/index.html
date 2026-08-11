@@ -29,8 +29,8 @@
 	<script>try{if(localStorage.getItem("__framer_force_showing_editorbar_since")){const n=document.createElement("link");n.rel="modulepreload";n.href="https://framer.com/edit/init.mjs";document.head.appendChild(n)}}catch(e){}</script>
 	<link rel="canonical" href="/about"><meta property="og:url" content="/about"><!-- Start of headStart -->
     
-    <link rel="stylesheet" href="/site-shell.css?v=20260810-10">
-    <script defer src="/site-shell.js?v=20260810-10"></script>
+    <link rel="stylesheet" href="/site-shell.css?v=20260810-11">
+    <script defer src="/site-shell.js?v=20260810-11"></script>
     <style id="about-connect-styles">
         .framer-AStPX > [data-framer-name="Footer"],
         .framer-1ym0sig {
@@ -107,17 +107,20 @@
 
         .about-connect-flap.is-space {
             width: 40px;
-            color: #000;
+            color: #fff;
         }
 
         .about-connect-flap.is-flipping {
-            animation: about-flap-turn .3s ease-in-out;
+            background: #1f1f1f;
+            color: #fff;
+            opacity: 1;
+            animation: about-flap-turn-solid .3s ease-in-out;
         }
 
-        @keyframes about-flap-turn {
-            0% { transform: rotateX(0deg); opacity: .5; }
-            50% { transform: rotateX(90deg); opacity: .75; }
-            100% { transform: rotateX(0deg); opacity: 1; }
+        @keyframes about-flap-turn-solid {
+            0% { transform: rotateX(0deg); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0deg); }
         }
 
         .about-connect-actions {
@@ -614,14 +617,16 @@
 
                 const reveal = () => {
                     section.classList.add("is-visible")
-                    const animated = [...flaps.children].filter(flap => !flap.classList.contains("is-space"))
+                    const animated = [...flaps.children]
                     const timer = setInterval(() => {
                         let changed = false
                         animated.forEach(flap => {
                             flap.classList.remove("is-flipping")
                             void flap.offsetWidth
                             flap.classList.add("is-flipping")
-                            flap.textContent = alphabet[Math.floor(Math.random() * alphabet.length)]
+                            flap.textContent = flap.classList.contains("is-space")
+                                ? "\u00a0"
+                                : alphabet[Math.floor(Math.random() * alphabet.length)]
                             changed = true
                         })
                         if (changed) playFlapSound()
@@ -630,7 +635,7 @@
                     setTimeout(() => {
                         clearInterval(timer)
                         animated.forEach(flap => {
-                            flap.textContent = flap.dataset.final
+                            flap.textContent = flap.classList.contains("is-space") ? "\u00a0" : flap.dataset.final
                             flap.classList.remove("is-flipping")
                         })
                     }, 1500)
