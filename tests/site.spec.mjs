@@ -311,7 +311,7 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/")
   const mobileHeader = page.locator(".site-nav-shell").first()
-  await expect.poll(() => mobileHeader.evaluate(element => getComputedStyle(element).transform)).toBe("matrix(1, 0, 0, 1, 0, 0)")
+  await expect.poll(() => mobileHeader.evaluate(element => getComputedStyle(element).transform)).toBe("none")
   const menuButton = mobileHeader.locator('.framer-9sf85-container')
   const headerBox = await mobileHeader.boundingBox()
   const menuBox = await menuButton.boundingBox()
@@ -354,6 +354,147 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await expect(page.locator("html")).not.toHaveClass(/project-scroll-in-flight/)
   await expect.poll(() => page.locator("#projects").evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
   await expect(page.locator("html")).toHaveCSS("scroll-snap-type", "y mandatory")
+})
+
+test("mobile About menu keeps the header fixed in place above page animation", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto("/about")
+
+  const header = page.locator(".site-nav-shell").first()
+  const closedName = header.getByRole("link", { name: "Dhwani Shah", exact: true })
+  await expect(closedName).toBeVisible()
+  const closedNameBox = await closedName.boundingBox()
+  await page.evaluate(() => {
+    window.__aboutHeaderTransitionPositions = []
+    const deadline = performance.now() + 500
+    const sample = () => {
+      const menu = document.querySelector('.framer-7EQCV[data-framer-name="Phone"]')
+      const name = [...(menu?.querySelectorAll("a") || [])].find(link => link.textContent.trim() === "Dhwani Shah")
+      if (name) {
+        const box = name.getBoundingClientRect()
+        window.__aboutHeaderTransitionPositions.push({ x: box.x, width: box.width, height: box.height })
+      }
+      if (performance.now() < deadline) requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+  })
+  await header.locator('[data-framer-name="open"]').click()
+  await page.waitForTimeout(500)
+  const transitionNamePositions = await page.evaluate(() => window.__aboutHeaderTransitionPositions)
+
+  const menu = header.locator('[data-framer-name="Phone"]')
+  const openName = menu.getByRole("link", { name: "Dhwani Shah", exact: true })
+  const projects = menu.getByRole("link", { name: "Projects", exact: true })
+  await expect(menu).toBeVisible()
+  const menuBox = await menu.boundingBox()
+  const openNameBox = await openName.boundingBox()
+  expect(Math.abs(menuBox.x)).toBeLessThan(1)
+  expect(Math.abs(menuBox.y)).toBeLessThan(1)
+  expect(Math.abs(menuBox.width - 390)).toBeLessThan(1)
+  expect(Math.abs(openNameBox.x - closedNameBox.x)).toBeLessThan(1)
+  expect(Math.abs(openNameBox.y - closedNameBox.y)).toBeLessThan(1)
+  expect(Math.abs(openNameBox.width - closedNameBox.width)).toBeLessThan(1)
+  expect(Math.abs(openNameBox.height - closedNameBox.height)).toBeLessThan(1)
+  expect(transitionNamePositions.length).toBeGreaterThan(3)
+  for (const position of transitionNamePositions) {
+    expect(Math.abs(position.x - closedNameBox.x)).toBeLessThan(1)
+    expect(Math.abs(position.width - closedNameBox.width)).toBeLessThan(1)
+    expect(Math.abs(position.height - closedNameBox.height)).toBeLessThan(1)
+  }
+  expect(Number(await header.evaluate(element => getComputedStyle(element).zIndex))).toBeGreaterThanOrEqual(1000)
+  expect(await projects.evaluate(element => {
+    const box = element.getBoundingClientRect()
+    const topmost = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return element === topmost || element.contains(topmost)
+  })).toBe(true)
+
+  await page.evaluate(() => {
+    window.__aboutHeaderClosePositions = []
+    const deadline = performance.now() + 500
+    const sample = () => {
+      const names = [...document.querySelectorAll('.site-nav-shell a, .mobile-header-name-guard a')]
+        .filter(link => link.textContent.trim() === "Dhwani Shah")
+        .filter(link => {
+          const box = link.getBoundingClientRect()
+          const style = getComputedStyle(link)
+          return box.width > 0 && box.height > 0 && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0
+        })
+      for (const name of names) {
+        const box = name.getBoundingClientRect()
+        window.__aboutHeaderClosePositions.push({ x: box.x, y: box.y, width: box.width, height: box.height })
+      }
+      if (performance.now() < deadline) requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+  })
+  await menu.locator('[data-framer-name="close"]').click()
+  await page.waitForTimeout(700)
+  await expect(menu).toHaveCount(0)
+  const closedAgainBox = await header.getByRole("link", { name: "Dhwani Shah", exact: true }).boundingBox()
+  const closePositions = await page.evaluate(() => window.__aboutHeaderClosePositions)
+  expect(Math.abs(closedAgainBox.x - closedNameBox.x)).toBeLessThan(1)
+  expect(Math.abs(closedAgainBox.y - closedNameBox.y)).toBeLessThan(1)
+  expect(Math.abs(closedAgainBox.width - closedNameBox.width)).toBeLessThan(1)
+  expect(Math.abs(closedAgainBox.height - closedNameBox.height)).toBeLessThan(1)
+  expect(closePositions.length).toBeGreaterThan(3)
+  for (const position of closePositions) {
+    expect(Math.abs(position.x - closedNameBox.x)).toBeLessThan(1)
+    expect(Math.abs(position.y - closedNameBox.y)).toBeLessThan(1)
+    expect(Math.abs(position.width - closedNameBox.width)).toBeLessThan(1)
+    expect(Math.abs(position.height - closedNameBox.height)).toBeLessThan(1)
+  }
+})
+
+test("project transitions use one consistent split flap sound across mobile tablet and desktop", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__projectTransitionSoundEvents = []
+    HTMLMediaElement.prototype.play = function () {
+      if (this.dataset.soundTrigger === "project-transition") {
+        window.__projectTransitionSoundEvents.push({
+          source: this.currentSrc || this.src,
+          volume: this.volume,
+          playbackRate: this.playbackRate,
+        })
+      }
+      return Promise.resolve()
+    }
+  })
+  for (const viewport of [
+    { width: 390, height: 667 },
+    { width: 900, height: 900 },
+    { width: 1440, height: 1000 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto("/")
+
+    const panels = page.locator(".project-scroll-panel")
+    for (let index = 0; index < 4; index += 1) {
+      await panels.nth(index).evaluate(element => element.scrollIntoView({ block: "start", behavior: "instant" }))
+      await expect(panels.nth(index)).toHaveClass(/is-active/)
+      await expect.poll(() => page.evaluate(() => window.__projectTransitionSoundEvents.length)).toBe(index + 1)
+    }
+    const events = await page.evaluate(() => window.__projectTransitionSoundEvents)
+    expect(events).toHaveLength(4)
+    expect(new Set(events.map(event => event.source)).size).toBe(1)
+    for (const event of events) {
+      expect(event.volume).toBe(.18)
+      expect(event.playbackRate).toBe(1)
+    }
+
+    if (viewport.width === 390) {
+      const emptyTallyParagraph = panels.first().locator(".framer-12hj3tg > p.framer-text").filter({ has: page.locator("br.trailing-break") })
+      await expect(emptyTallyParagraph).toBeHidden()
+      const tallyGap = await panels.first().evaluate(element => {
+        const description = [...element.querySelectorAll(".framer-12hj3tg > p")]
+          .find(paragraph => paragraph.textContent.trim())?.getBoundingClientRect()
+        const tags = [...element.lastElementChild.querySelectorAll("div")]
+          .filter(tag => getComputedStyle(tag).backgroundColor === "rgb(31, 31, 31)" && tag.getBoundingClientRect().width > 20)
+          .map(tag => tag.getBoundingClientRect())
+        return description && tags.length ? Math.min(...tags.map(tag => tag.top)) - description.bottom : Number.POSITIVE_INFINITY
+      })
+      expect(tallyGap).toBeCloseTo(12, 0)
+    }
+  }
 })
 
 test("mobile homepage uses reference-style native viewport snapping", async ({ page }) => {

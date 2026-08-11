@@ -16,6 +16,7 @@ export default defineConfig({
     reuseExistingServer: true
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1000 } } }
+    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1000 } } },
+    { name: "mobile-webkit", grep: /mobile About menu|project transitions/, use: { ...devices["iPhone 13"] } }
   ]
 })

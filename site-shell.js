@@ -8,9 +8,12 @@
     const observedHomePanels = new WeakSet()
     const homePanelVisibility = new WeakMap()
     let flapSoundPool
+    let projectTransitionSound
     let lastFlapSoundAt = 0
     let scheduled = false
     let projectHashHandled = false
+    let completingMobileMenuClose = false
+    let lastActiveHomePanelIndex = -1
     const viewportContent = "width=device-width, initial-scale=1.0, viewport-fit=cover"
 
     function isHomePath(pathname = location.pathname) {
@@ -68,6 +71,63 @@
         }
     }
 
+    function handleMobileMenuClose(event) {
+        if (completingMobileMenuClose || !matchMedia("(max-width: 809.98px)").matches) return
+        const target = event.target instanceof Element ? event.target : event.target?.parentElement
+        const close = target?.closest('[data-framer-name="close"]')
+        const menu = close?.closest('.framer-7EQCV[data-framer-name="Phone"]')
+        const shell = menu?.closest(".site-nav-shell")
+        if (!close || !menu || !shell) return
+
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        if (menu.classList.contains("mobile-menu-closing")) return
+        const name = [...menu.querySelectorAll("a")].find(link => link.textContent.trim() === "Dhwani Shah")
+        const nameContainer = name?.closest('[data-framer-component-type="RichTextContainer"]')
+        const guard = nameContainer?.cloneNode(true)
+        if (guard instanceof HTMLElement && nameContainer) {
+            const box = nameContainer.getBoundingClientRect()
+            guard.classList.add("mobile-header-name-guard")
+            guard.setAttribute("aria-hidden", "true")
+            guard.querySelectorAll("[id]").forEach(element => element.removeAttribute("id"))
+            guard.style.top = `${box.top}px`
+            guard.style.left = `${box.left}px`
+            guard.style.width = `${box.width}px`
+            guard.style.height = `${box.height}px`
+            document.body.appendChild(guard)
+        }
+        shell.classList.add("mobile-menu-settling")
+        menu.classList.add("mobile-menu-closing")
+        const finishClose = () => {
+            shell.classList.remove("mobile-menu-commit-close", "mobile-menu-settling")
+            menu.classList.remove("mobile-menu-closing")
+            guard?.remove()
+        }
+        setTimeout(() => {
+            if (!close.isConnected || !shell.isConnected) {
+                finishClose()
+                return
+            }
+            shell.classList.add("mobile-menu-commit-close")
+            completingMobileMenuClose = true
+            for (const type of ["pointerdown", "pointerup", "click"]) {
+                close.dispatchEvent(new PointerEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    pointerId: 1,
+                    pointerType: "touch",
+                    isPrimary: true,
+                    button: 0,
+                }))
+            }
+            completingMobileMenuClose = false
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                shell.classList.remove("mobile-menu-commit-close")
+            }))
+            setTimeout(finishClose, 360)
+        }, 260)
+    }
+
     const homePanelObserver = new IntersectionObserver(entries => {
         for (const entry of entries) {
             homePanelVisibility.set(entry.target, entry.intersectionRatio)
@@ -81,6 +141,10 @@
         , panels[0])
         const activeIndex = panels.indexOf(activePanel)
         const activeRatio = homePanelVisibility.get(activePanel) || 0
+        if (activeRatio >= .7 && activeIndex !== lastActiveHomePanelIndex) {
+            playFlapSound("project-transition")
+            lastActiveHomePanelIndex = activeIndex
+        }
         const progress = document.querySelector(".project-progress")
         progress?.classList.toggle("is-visible", activeRatio >= .12)
         progress?.querySelectorAll("a").forEach((dot, index) => {
@@ -91,20 +155,30 @@
         })
     }, { threshold: [.05, .12, .35, .7], rootMargin: "-4% 0px -4%" })
 
-    function playFlapSound() {
+    function playFlapSound(trigger = "split-flap") {
         const now = performance.now()
-        if (now - lastFlapSoundAt < 65) return
-        lastFlapSoundAt = now
+        if (trigger !== "project-transition") {
+            if (now - lastFlapSoundAt < 65) return
+            lastFlapSoundAt = now
+        }
         flapSoundPool ||= referenceFlapSounds.map(source => {
             const audio = new Audio(source)
             audio.preload = "auto"
             audio.volume = .12
             return audio
         })
-        const source = flapSoundPool[Math.floor(Math.random() * flapSoundPool.length)]
+        const isProjectTransition = trigger === "project-transition"
+        const source = isProjectTransition
+            ? flapSoundPool[0]
+            : flapSoundPool[Math.floor(Math.random() * flapSoundPool.length)]
         const sound = source.cloneNode()
-        sound.volume = .12
-        sound.playbackRate = .96 + Math.random() * .08
+        sound.dataset.soundTrigger = trigger
+        sound.volume = isProjectTransition ? .18 : .12
+        sound.playbackRate = isProjectTransition ? 1 : .96 + Math.random() * .08
+        if (isProjectTransition) {
+            projectTransitionSound?.pause()
+            projectTransitionSound = sound
+        }
         sound.play().catch(() => {})
     }
 
@@ -355,6 +429,9 @@
     }
 
     scheduleNormalization()
+    document.addEventListener("pointerdown", handleMobileMenuClose, true)
+    document.addEventListener("pointerup", handleMobileMenuClose, true)
+    document.addEventListener("click", handleMobileMenuClose, true)
     document.addEventListener("click", handleProjectLink, true)
     addEventListener("hashchange", () => {
         projectHashHandled = false
