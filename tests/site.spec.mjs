@@ -128,7 +128,7 @@ test("Projects navigation reaches the first project section", async ({ page }) =
   await expect.poll(() => page.locator("#projects").evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
 })
 
-test("homepage split-flap animation stays centered at every breakpoint", async ({ page }) => {
+test("homepage split-flap animation stays optically centered at every breakpoint", async ({ page }) => {
   for (const viewport of [
     { width: 1440, height: 1000 },
     { width: 1024, height: 768 },
@@ -143,7 +143,8 @@ test("homepage split-flap animation stays centered at every breakpoint", async (
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
     })
     expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThan(1)
-    expect(Math.abs(box.y + box.height / 2 - viewport.height / 2)).toBeLessThan(1)
+    const expectedVerticalCenter = viewport.width < 810 ? viewport.height * .47 : viewport.height / 2
+    expect(Math.abs(box.y + box.height / 2 - expectedVerticalCenter)).toBeLessThan(1)
     await expect(page.locator('[data-flap-sound-source="chloeyan-ferry"]')).toHaveCount(1)
   }
 })
@@ -569,7 +570,7 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
       .map(child => child.getBoundingClientRect())
     const top = Math.min(...visibleAnimation.map(box => box.top))
     const bottom = Math.max(...visibleAnimation.map(box => box.bottom))
-    return Math.abs((top + bottom) / 2 - innerHeight / 2)
+    return Math.abs((top + bottom) / 2 - innerHeight * .47)
   })).toBeLessThanOrEqual(2)
   await expect.poll(() => landing.evaluate(element => Math.abs(element.getBoundingClientRect().height - innerHeight))).toBeLessThan(1)
   const footer = page.locator(".portfolio-meta-footer")
