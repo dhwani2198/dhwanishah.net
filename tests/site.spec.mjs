@@ -129,6 +129,20 @@ test("Projects navigation reaches the first project section", async ({ page }) =
 })
 
 test("homepage split-flap animation stays optically centered at every breakpoint", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__landingFlapSoundEvents = []
+    HTMLMediaElement.prototype.play = function () {
+      if (this.dataset.soundTrigger === "landing-flap") {
+        window.__landingFlapSoundEvents.push({
+          source: this.currentSrc || this.src,
+          volume: this.volume,
+          playbackRate: this.playbackRate,
+        })
+      }
+      return Promise.resolve()
+    }
+  })
+  let desktopSound
   for (const viewport of [
     { width: 1440, height: 1000 },
     { width: 1024, height: 768 },
@@ -146,6 +160,13 @@ test("homepage split-flap animation stays optically centered at every breakpoint
     const expectedVerticalCenter = viewport.width < 810 ? viewport.height * .47 : viewport.height / 2
     expect(Math.abs(box.y + box.height / 2 - expectedVerticalCenter)).toBeLessThan(1)
     await expect(page.locator('[data-flap-sound-source="chloeyan-ferry"]')).toHaveCount(1)
+    await expect.poll(() => page.evaluate(() => window.__landingFlapSoundEvents.length)).toBeGreaterThan(0)
+    const sound = await page.evaluate(() => window.__landingFlapSoundEvents[0])
+    expect(sound.source).toContain("/sounds/sound1.mp3")
+    expect(sound.volume).toBe(.12)
+    expect(sound.playbackRate).toBe(1)
+    desktopSound ||= sound
+    expect(sound).toEqual(desktopSound)
   }
 })
 

@@ -225,7 +225,8 @@
         }
         const sounds = ensureFlapSoundPool()
         const isProjectTransition = trigger === "project-transition"
-        const source = isProjectTransition
+        const isLandingFlap = trigger === "landing-flap"
+        const source = isProjectTransition || isLandingFlap
             ? sounds[0]
             : sounds[Math.floor(Math.random() * sounds.length)]
         if (isProjectTransition && projectTransitionSoundPriming) {
@@ -236,7 +237,7 @@
         sound.dataset.soundTrigger = trigger
         if (isProjectTransition) sound.dataset.projectIndex = String(projectIndex)
         sound.volume = isProjectTransition ? .18 : .12
-        sound.playbackRate = isProjectTransition ? 1 : .96 + Math.random() * .08
+        sound.playbackRate = isProjectTransition || isLandingFlap ? 1 : .96 + Math.random() * .08
         if (isProjectTransition) {
             projectTransitionSound?.pause()
             sound.currentTime = 0
@@ -261,7 +262,7 @@
             container.dataset.flapSoundReady = "true"
             container.dataset.flapSoundSource = "chloeyan-ferry"
             new MutationObserver(() => {
-                if (container.isConnected && getComputedStyle(container).display !== "none") playFlapSound()
+                if (container.isConnected && getComputedStyle(container).display !== "none") playFlapSound("landing-flap")
             }).observe(container, { childList: true, characterData: true, subtree: true })
         })
     }
