@@ -217,6 +217,11 @@ body:not(.site-home) .site-nav-shell {
     }
     .about-connect-actions { gap: 18px; }
     .about-connect-meta { font-size: 11px; }
+
+    html.site-home .framer-Rkf84 .framer-1cf70bh {
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -372,8 +377,8 @@ body.site-home { overscroll-behavior-y: auto; }
 
     html.site-home .project-scroll-panel {
         box-sizing: border-box !important;
-        height: 100vh !important;
-        min-height: 100vh !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
         padding: 54px 0 !important;
         gap: 24px !important;
         justify-content: center !important;
@@ -485,7 +490,9 @@ body.site-home { overscroll-behavior-y: auto; }
     html.site-home .project-scroll-panel > :last-child > :nth-child(n + 4) { order: 3 !important; }
 
     html.site-home [data-framer-name="tally section"] .framer-a9ujo6,
-    html.site-home [data-framer-name="sprint x section"] .framer-1uef7b5 {
+    html.site-home [data-framer-name="sprint x section"] .framer-1uef7b5,
+    html.site-home [data-framer-name="curalink section"] .framer-lyfyjg,
+    html.site-home [data-framer-name="Arch portfolio section"] .framer-r80pms {
         height: min-content !important;
         min-height: 0 !important;
         padding: 0 !important;
@@ -512,17 +519,28 @@ body.site-home { overscroll-behavior-y: auto; }
     html.site-home [data-framer-name="curalink section"] .framer-1cnb6ar,
     html.site-home [data-framer-name="Arch portfolio section"] .framer-1cszixz,
     html.site-home [data-framer-name="Arch portfolio section"] .framer-r4cse6 {
+        position: relative !important;
+        inset: auto !important;
+        align-self: flex-start !important;
         left: 0 !important;
+        translate: none !important;
     }
 
     html.site-home [data-framer-name="curalink section"] .framer-1cnb6ar {
-        translate: 0 -10px !important;
+        margin-top: -4px !important;
         transition: none !important;
+    }
+
+    html.site-home [data-framer-name="Arch portfolio section"] .framer-1cszixz {
+        margin-top: -4px !important;
+    }
+
+    html.site-home [data-framer-name="Arch portfolio section"] .framer-r4cse6 {
+        margin-top: -8px !important;
     }
 
     html.site-home [data-framer-name="Arch portfolio section"] .framer-1cszixz,
     html.site-home [data-framer-name="Arch portfolio section"] .framer-r4cse6 {
-        translate: 0 -9px !important;
         transition: none !important;
     }
 

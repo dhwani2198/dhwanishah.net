@@ -562,6 +562,16 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
   await expect(page.locator("html")).toHaveCSS("scroll-behavior", "auto")
   await expect(page.locator("body")).toHaveCSS("overscroll-behavior-y", "auto")
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", "width=device-width, initial-scale=1.0, viewport-fit=cover")
+  const landing = page.locator(".framer-1cf70bh")
+  await expect.poll(() => landing.evaluate(element => {
+    const visibleAnimation = [...element.querySelectorAll(".framer-14c1xbw-container, .framer-rmunsi-container")]
+      .filter(child => getComputedStyle(child).display !== "none")
+      .map(child => child.getBoundingClientRect())
+    const top = Math.min(...visibleAnimation.map(box => box.top))
+    const bottom = Math.max(...visibleAnimation.map(box => box.bottom))
+    return Math.abs((top + bottom) / 2 - innerHeight / 2)
+  })).toBeLessThanOrEqual(2)
+  await expect.poll(() => landing.evaluate(element => Math.abs(element.getBoundingClientRect().height - innerHeight))).toBeLessThan(1)
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
@@ -679,6 +689,16 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
         return Math.abs(Math.min(...tags.map(tag => tag.top)) - description.bottom - 12)
       }, descriptionSelector)).toBeLessThanOrEqual(1.5)
     }
+    await expect.poll(() => panel.evaluate(element => {
+      const image = element.querySelector("img")?.getBoundingClientRect()
+      const text = [...element.querySelectorAll("h1, h2, h3, h4, h5, h6, p")]
+        .filter(node => node.textContent.trim() && getComputedStyle(node).display !== "none")
+        .map(node => node.getBoundingClientRect())
+      const boxes = [image, ...text].filter(Boolean)
+      const top = Math.min(...boxes.map(box => box.top))
+      const bottom = Math.max(...boxes.map(box => box.bottom))
+      return Math.abs((top + bottom) / 2 - innerHeight / 2)
+    })).toBeLessThanOrEqual(6)
     projectIndex += 1
   }
 
