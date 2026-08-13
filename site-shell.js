@@ -236,7 +236,9 @@
         const sound = isProjectTransition ? source : source.cloneNode()
         sound.dataset.soundTrigger = trigger
         if (isProjectTransition) sound.dataset.projectIndex = String(projectIndex)
-        sound.volume = isProjectTransition ? .18 : .12
+        sound.volume = isProjectTransition
+            ? .18
+            : isLandingFlap && matchMedia("(max-width: 809.98px)").matches ? .10 : .12
         sound.playbackRate = isProjectTransition || isLandingFlap ? 1 : .96 + Math.random() * .08
         if (isProjectTransition) {
             projectTransitionSound?.pause()

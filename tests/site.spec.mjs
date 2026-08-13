@@ -163,10 +163,11 @@ test("homepage split-flap animation stays optically centered at every breakpoint
     await expect.poll(() => page.evaluate(() => window.__landingFlapSoundEvents.length)).toBeGreaterThan(0)
     const sound = await page.evaluate(() => window.__landingFlapSoundEvents[0])
     expect(sound.source).toContain("/sounds/sound1.mp3")
-    expect(sound.volume).toBe(.12)
+    expect(sound.volume).toBe(viewport.width < 810 ? .10 : .12)
     expect(sound.playbackRate).toBe(1)
     desktopSound ||= sound
-    expect(sound).toEqual(desktopSound)
+    expect(sound.source).toBe(desktopSound.source)
+    expect(sound.playbackRate).toBe(desktopSound.playbackRate)
   }
 })
 
