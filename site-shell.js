@@ -18,7 +18,7 @@
     let projectHashHandled = false
     let completingMobileMenuClose = false
     let mobileMenuOpenedAt = 0
-    let mobileMenuNameFreezeTimer
+    let mobileLandingViewportWidth = 0
     let lastActiveHomePanelIndex = -1
     const viewportContent = "width=device-width, initial-scale=1.0, viewport-fit=cover"
 
@@ -29,8 +29,12 @@
     function normalizeViewport() {
         const viewport = document.querySelector('meta[name="viewport"]')
         if (viewport && viewport.content !== viewportContent) viewport.content = viewportContent
-        const mobileHeight = window.visualViewport?.height || innerHeight
-        document.documentElement.style.setProperty("--mobile-landing-height", `${mobileHeight}px`)
+        const mobileWidth = window.visualViewport?.width || innerWidth
+        if (!mobileLandingViewportWidth || Math.abs(mobileWidth - mobileLandingViewportWidth) > 1) {
+            mobileLandingViewportWidth = mobileWidth
+            const mobileHeight = window.visualViewport?.height || innerHeight
+            document.documentElement.style.setProperty("--mobile-landing-height", `${mobileHeight}px`)
+        }
     }
 
     function scrollToProjects(updateHash = true) {
@@ -85,47 +89,43 @@
         const open = target?.closest('.site-nav-shell [data-framer-name="open"]')
         if (!open) return
         mobileMenuOpenedAt = performance.now()
-        if (event.type === "click") freezeMobileMenuName(open.closest(".site-nav-shell"), 380)
     }
 
-    function freezeMobileMenuName(shell, duration) {
-        if (!shell) return
-        const source = [...shell.querySelectorAll("a")].find(link => {
-            if (link.textContent.trim() !== "Dhwani Shah") return false
-            const box = link.getBoundingClientRect()
-            const style = getComputedStyle(link)
-            return box.width > 0 && box.height > 0 && style.visibility !== "hidden" && Number(style.opacity) > 0
-        })
-        if (!source) return
+    function ensureMobileStableNames() {
+        if (!matchMedia("(max-width: 809.98px)").matches) return
+        document.querySelectorAll(".site-nav-shell").forEach(shell => {
+            if (shell.querySelector(".mobile-stable-name")) return
+            const source = [...shell.querySelectorAll("a")].find(link => {
+                if (link.textContent.trim() !== "Dhwani Shah") return false
+                const box = link.getBoundingClientRect()
+                const style = getComputedStyle(link)
+                return box.width > 0 && box.height > 0 && style.visibility !== "hidden" && Number(style.opacity) > 0
+            })
+            if (!source) return
 
-        clearTimeout(mobileMenuNameFreezeTimer)
-        document.querySelector(".mobile-header-name-freeze")?.remove()
-        const box = source.getBoundingClientRect()
-        const style = getComputedStyle(source)
-        const freeze = document.createElement("a")
-        freeze.className = "mobile-header-name-freeze"
-        freeze.href = source.href
-        freeze.textContent = "Dhwani Shah"
-        freeze.setAttribute("aria-hidden", "true")
-        Object.assign(freeze.style, {
-            top: `${box.top}px`,
-            left: `${box.left}px`,
-            width: `${box.width}px`,
-            height: `${box.height}px`,
-            color: style.color,
-            fontFamily: style.fontFamily,
-            fontSize: style.fontSize,
-            fontStyle: style.fontStyle,
-            fontWeight: style.fontWeight,
-            letterSpacing: style.letterSpacing,
-            lineHeight: style.lineHeight,
+            const shellBox = shell.getBoundingClientRect()
+            const box = source.getBoundingClientRect()
+            const style = getComputedStyle(source)
+            const stable = document.createElement("a")
+            stable.className = "mobile-stable-name"
+            stable.href = source.href
+            stable.textContent = "Dhwani Shah"
+            Object.assign(stable.style, {
+                top: `${box.top - shellBox.top}px`,
+                left: `${box.left - shellBox.left}px`,
+                width: `${box.width}px`,
+                height: `${box.height}px`,
+                color: style.color,
+                fontFamily: style.fontFamily,
+                fontSize: style.fontSize,
+                fontStyle: style.fontStyle,
+                fontWeight: style.fontWeight,
+                letterSpacing: style.letterSpacing,
+                lineHeight: style.lineHeight,
+            })
+            shell.appendChild(stable)
+            shell.classList.add("has-mobile-stable-name")
         })
-        document.body.appendChild(freeze)
-        shell.classList.add("mobile-menu-name-frozen")
-        mobileMenuNameFreezeTimer = setTimeout(() => {
-            shell.classList.remove("mobile-menu-name-frozen")
-            freeze.remove()
-        }, duration)
     }
 
     function alignMobileMenus() {
@@ -155,7 +155,6 @@
         event.stopImmediatePropagation()
         if (performance.now() - mobileMenuOpenedAt < 300) return
         if (menu.classList.contains("mobile-menu-closing")) return
-        freezeMobileMenuName(shell, 650)
         menu.classList.add("mobile-menu-closing")
         const finishClose = () => {
             menu.classList.remove("mobile-menu-closing")
@@ -520,6 +519,7 @@
             if (shell && shell.id !== "main") shell.classList.add("site-nav-shell")
         })
         ensureBlogLinks()
+        ensureMobileStableNames()
         alignMobileMenus()
 
         document.querySelectorAll("a").forEach(link => {

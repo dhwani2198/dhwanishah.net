@@ -426,7 +426,8 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   const menuButton = mobileHeader.locator('.framer-9sf85-container')
   const headerBox = await mobileHeader.boundingBox()
   const menuBox = await menuButton.boundingBox()
-  const closedNameBox = await mobileHeader.getByRole("link", { name: "Dhwani Shah", exact: true }).boundingBox()
+  const stableName = mobileHeader.locator(".mobile-stable-name")
+  const closedNameBox = await stableName.boundingBox()
   expect(Math.abs(menuBox.x + menuBox.width - (headerBox.x + headerBox.width))).toBeLessThan(1)
   await expect(menuButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
   expect(await menuButton.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toBe("none")
@@ -441,14 +442,14 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await expect(openMenu).toHaveCSS("position", "fixed")
   await expect(openMenu).toHaveCSS("background-color", "rgb(0, 0, 0)")
   const menuLinks = openMenu.locator(".framer-1v617ec")
-  const openName = openMenu.getByRole("link", { name: "Dhwani Shah", exact: true })
+  const openName = stableName
   const openMenuBox = await openMenu.boundingBox()
   const menuLinksBox = await menuLinks.boundingBox()
   const projectLinkBox = await openMenu.getByRole("link", { name: "Projects", exact: true }).boundingBox()
   expect(Math.abs(openMenuBox.x)).toBeLessThan(1)
   expect(Math.abs(openMenuBox.y)).toBeLessThan(1)
   expect(Math.abs(openMenuBox.width - 390)).toBeLessThan(1)
-  expect(Math.abs(openMenuBox.height - 243)).toBeLessThan(1)
+  expect(Math.abs(openMenuBox.height - 268)).toBeLessThan(1)
   const openNameBox = await openName.boundingBox()
   expect(Math.abs(openNameBox.x - closedNameBox.x)).toBeLessThan(1)
   expect(Math.abs(openNameBox.y - closedNameBox.y)).toBeLessThan(1)
@@ -462,6 +463,8 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   for (const option of await menuLinks.locator('[data-framer-component-type="RichTextContainer"]').all()) {
     expect((await option.boundingBox()).height).toBeGreaterThanOrEqual(39.9)
   }
+  const resumeBox = await openMenu.getByRole("link", { name: "Resume", exact: true }).boundingBox()
+  expect(openMenuBox.y + openMenuBox.height - (resumeBox.y + resumeBox.height)).toBeGreaterThanOrEqual(24)
 
   await openMenu.getByRole("link", { name: "Projects", exact: true }).click()
   await expect(page).toHaveURL(/\/#projects$/)
@@ -476,15 +479,14 @@ test("mobile About menu keeps the header fixed in place above page animation", a
   await page.goto("/about")
 
   const header = page.locator(".site-nav-shell").first()
-  const closedName = header.getByRole("link", { name: "Dhwani Shah", exact: true })
+  const closedName = header.locator(".mobile-stable-name")
   await expect(closedName).toBeVisible()
   const closedNameBox = await closedName.boundingBox()
   await page.evaluate(() => {
     window.__aboutHeaderTransitionPositions = []
     const deadline = performance.now() + 500
     const sample = () => {
-      const menu = document.querySelector('.framer-7EQCV[data-framer-name="Phone"]')
-      const name = [...(menu?.querySelectorAll("a") || [])].find(link => link.textContent.trim() === "Dhwani Shah")
+      const name = document.querySelector(".mobile-stable-name")
       if (name) {
         const box = name.getBoundingClientRect()
         window.__aboutHeaderTransitionPositions.push({ x: box.x, width: box.width, height: box.height })
@@ -501,7 +503,7 @@ test("mobile About menu keeps the header fixed in place above page animation", a
   const transitionNamePositions = await page.evaluate(() => window.__aboutHeaderTransitionPositions)
 
   const menu = header.locator('[data-framer-name="Phone"]')
-  const openName = menu.getByRole("link", { name: "Dhwani Shah", exact: true })
+  const openName = header.locator(".mobile-stable-name")
   const projects = menu.getByRole("link", { name: "Projects", exact: true })
   await expect(menu).toBeVisible()
   const menuBox = await menu.boundingBox()
@@ -530,7 +532,7 @@ test("mobile About menu keeps the header fixed in place above page animation", a
     window.__aboutHeaderClosePositions = []
     const deadline = performance.now() + 500
     const sample = () => {
-      const names = [...document.querySelectorAll('.site-nav-shell a, .mobile-header-name-freeze')]
+      const names = [...document.querySelectorAll('.mobile-stable-name')]
         .filter(link => link.textContent.trim() === "Dhwani Shah")
         .filter(link => {
           const box = link.getBoundingClientRect()
@@ -653,6 +655,14 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
     const viewportHeight = window.visualViewport?.height || innerHeight
     return Math.abs(element.getBoundingClientRect().height - viewportHeight)
   })).toBeLessThan(1)
+  const stableLandingHeight = await landing.evaluate(element => element.getBoundingClientRect().height)
+  await page.setViewportSize({ width: 390, height: 720 })
+  await expect.poll(() => landing.evaluate(element => element.getBoundingClientRect().height)).toBe(stableLandingHeight)
+  const firstProject = page.locator(".project-scroll-panel").first()
+  await firstProject.evaluate(element => element.scrollIntoView({ block: "start", behavior: "instant" }))
+  await expect.poll(() => firstProject.evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
+  await page.waitForTimeout(350)
+  expect(await firstProject.evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
@@ -703,9 +713,13 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
   const homeMediaBox = await panels.first().locator(":scope > *").first().boundingBox()
   const homeTitleBox = await panels.first().getByText("TALLY", { exact: true }).first().boundingBox()
   await page.goto("/about")
-  const aboutBox = await page.locator(".framer-1vz9cvd").boundingBox()
+  const aboutSection = page.locator(".framer-1vz9cvd:visible")
+  await expect(aboutSection).toBeVisible()
+  const aboutBox = await aboutSection.boundingBox()
   await page.goto("/tally")
-  const caseStudyBox = await page.locator('[data-framer-name="VR Dashboard"]').first().boundingBox()
+  const caseStudy = page.locator('[data-framer-name="VR Dashboard"]:visible').first()
+  await expect(caseStudy).toBeVisible()
+  const caseStudyBox = await caseStudy.boundingBox()
   for (const box of [homePanelBox, homeMediaBox, aboutBox, caseStudyBox]) {
     expect(Math.abs(box.x - 20)).toBeLessThanOrEqual(2)
     expect(Math.abs(box.x + box.width - 370)).toBeLessThanOrEqual(2)
