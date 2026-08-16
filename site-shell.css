@@ -631,6 +631,8 @@ body.site-home { overscroll-behavior-y: auto; }
         transform: none !important;
         transform-origin: center !important;
         clip-path: inset(0 0 0 0);
+        contain: layout paint !important;
+        will-change: clip-path;
         animation: mobile-menu-open .28s cubic-bezier(.22, 1, .36, 1) both !important;
     }
 
@@ -654,35 +656,28 @@ body.site-home { overscroll-behavior-y: auto; }
         to { clip-path: inset(0 0 181px 0); }
     }
 
-    .site-nav-shell.mobile-menu-commit-close .framer-7EQCV[data-framer-name="Phone"] {
-        visibility: hidden !important;
-        animation: none !important;
-    }
-
-    .site-nav-shell.mobile-menu-settling .framer-ker4xb > [data-framer-component-type="RichTextContainer"] {
+    .site-nav-shell.mobile-menu-name-frozen .framer-ker4xb > [data-framer-component-type="RichTextContainer"] {
         visibility: hidden !important;
     }
 
-    .mobile-header-name-guard,
-    .mobile-header-name-guard * {
+    .mobile-header-name-freeze {
+        position: fixed !important;
+        z-index: 1200 !important;
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
         opacity: 1 !important;
         visibility: visible !important;
+        white-space: nowrap !important;
+        text-decoration: none !important;
         transform: none !important;
         transition: none !important;
         animation: none !important;
-    }
-
-    .mobile-header-name-guard {
-        position: fixed !important;
-        z-index: 1200 !important;
-        margin: 0 !important;
         pointer-events: none !important;
     }
 
     .site-nav-shell .framer-ker4xb > [data-framer-component-type="RichTextContainer"] .framer-text,
-    .site-nav-shell .framer-ker4xb > [data-framer-component-type="RichTextContainer"] a,
-    .mobile-header-name-guard .framer-text,
-    .mobile-header-name-guard a {
+    .site-nav-shell .framer-ker4xb > [data-framer-component-type="RichTextContainer"] a {
         font-family: "Inter", "Inter Placeholder", sans-serif !important;
         font-size: 17px !important;
         font-style: normal !important;

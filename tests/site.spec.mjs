@@ -430,7 +430,11 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   expect(Math.abs(menuBox.x + menuBox.width - (headerBox.x + headerBox.width))).toBeLessThan(1)
   await expect(menuButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
   expect(await menuButton.evaluate(element => getComputedStyle(element).webkitBackdropFilter || getComputedStyle(element).backdropFilter)).toBe("none")
-  await page.locator('[data-framer-name="open"]').first().click()
+  const activate = async locator => Number(await page.evaluate(() => navigator.maxTouchPoints)) > 0
+    ? locator.tap()
+    : locator.click()
+  await activate(page.locator('[data-framer-name="open"]').first())
+  await page.waitForTimeout(450)
   await expect(page.getByRole("link", { name: "About", exact: true }).last()).toBeVisible()
   await expect(page.getByRole("link", { name: "Resume", exact: true }).last()).toBeVisible()
   const openMenu = mobileHeader.locator('[data-framer-name="Phone"]')
@@ -489,7 +493,10 @@ test("mobile About menu keeps the header fixed in place above page animation", a
     }
     requestAnimationFrame(sample)
   })
-  await header.locator('[data-framer-name="open"]').click()
+  const activate = async locator => Number(await page.evaluate(() => navigator.maxTouchPoints)) > 0
+    ? locator.tap()
+    : locator.click()
+  await activate(header.locator('[data-framer-name="open"]'))
   await page.waitForTimeout(500)
   const transitionNamePositions = await page.evaluate(() => window.__aboutHeaderTransitionPositions)
 
@@ -523,7 +530,7 @@ test("mobile About menu keeps the header fixed in place above page animation", a
     window.__aboutHeaderClosePositions = []
     const deadline = performance.now() + 500
     const sample = () => {
-      const names = [...document.querySelectorAll('.site-nav-shell a, .mobile-header-name-guard a')]
+      const names = [...document.querySelectorAll('.site-nav-shell a, .mobile-header-name-freeze')]
         .filter(link => link.textContent.trim() === "Dhwani Shah")
         .filter(link => {
           const box = link.getBoundingClientRect()
@@ -538,7 +545,7 @@ test("mobile About menu keeps the header fixed in place above page animation", a
     }
     requestAnimationFrame(sample)
   })
-  await menu.locator('[data-framer-name="close"]').click()
+  await activate(menu.locator('[data-framer-name="close"]'))
   await page.waitForTimeout(700)
   await expect(menu).toHaveCount(0)
   const closedAgainBox = await header.getByRole("link", { name: "Dhwani Shah", exact: true }).boundingBox()

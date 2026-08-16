@@ -17,6 +17,8 @@
     let scheduled = false
     let projectHashHandled = false
     let completingMobileMenuClose = false
+    let mobileMenuOpenedAt = 0
+    let mobileMenuNameFreezeTimer
     let lastActiveHomePanelIndex = -1
     const viewportContent = "width=device-width, initial-scale=1.0, viewport-fit=cover"
 
@@ -75,6 +77,55 @@
         }
     }
 
+    function trackMobileMenuOpen(event) {
+        if (!matchMedia("(max-width: 809.98px)").matches) return
+        const target = event.target instanceof Element ? event.target : event.target?.parentElement
+        const open = target?.closest('.site-nav-shell [data-framer-name="open"]')
+        if (!open) return
+        mobileMenuOpenedAt = performance.now()
+        if (event.type === "click") freezeMobileMenuName(open.closest(".site-nav-shell"), 380)
+    }
+
+    function freezeMobileMenuName(shell, duration) {
+        if (!shell) return
+        const source = [...shell.querySelectorAll("a")].find(link => {
+            if (link.textContent.trim() !== "Dhwani Shah") return false
+            const box = link.getBoundingClientRect()
+            const style = getComputedStyle(link)
+            return box.width > 0 && box.height > 0 && style.visibility !== "hidden" && Number(style.opacity) > 0
+        })
+        if (!source) return
+
+        clearTimeout(mobileMenuNameFreezeTimer)
+        document.querySelector(".mobile-header-name-freeze")?.remove()
+        const box = source.getBoundingClientRect()
+        const style = getComputedStyle(source)
+        const freeze = document.createElement("a")
+        freeze.className = "mobile-header-name-freeze"
+        freeze.href = source.href
+        freeze.textContent = "Dhwani Shah"
+        freeze.setAttribute("aria-hidden", "true")
+        Object.assign(freeze.style, {
+            top: `${box.top}px`,
+            left: `${box.left}px`,
+            width: `${box.width}px`,
+            height: `${box.height}px`,
+            color: style.color,
+            fontFamily: style.fontFamily,
+            fontSize: style.fontSize,
+            fontStyle: style.fontStyle,
+            fontWeight: style.fontWeight,
+            letterSpacing: style.letterSpacing,
+            lineHeight: style.lineHeight,
+        })
+        document.body.appendChild(freeze)
+        shell.classList.add("mobile-menu-name-frozen")
+        mobileMenuNameFreezeTimer = setTimeout(() => {
+            shell.classList.remove("mobile-menu-name-frozen")
+            freeze.remove()
+        }, duration)
+    }
+
     function handleMobileMenuClose(event) {
         if (completingMobileMenuClose || !matchMedia("(max-width: 809.98px)").matches) return
         const target = event.target instanceof Element ? event.target : event.target?.parentElement
@@ -85,50 +136,22 @@
 
         event.preventDefault()
         event.stopImmediatePropagation()
+        if (performance.now() - mobileMenuOpenedAt < 300) return
         if (menu.classList.contains("mobile-menu-closing")) return
-        const name = [...menu.querySelectorAll("a")].find(link => link.textContent.trim() === "Dhwani Shah")
-        const nameContainer = name?.closest('[data-framer-component-type="RichTextContainer"]')
-        const guard = nameContainer?.cloneNode(true)
-        if (guard instanceof HTMLElement && nameContainer) {
-            const box = nameContainer.getBoundingClientRect()
-            guard.classList.add("mobile-header-name-guard")
-            guard.setAttribute("aria-hidden", "true")
-            guard.querySelectorAll("[id]").forEach(element => element.removeAttribute("id"))
-            guard.style.top = `${box.top}px`
-            guard.style.left = `${box.left}px`
-            guard.style.width = `${box.width}px`
-            guard.style.height = `${box.height}px`
-            document.body.appendChild(guard)
-        }
-        shell.classList.add("mobile-menu-settling")
+        freezeMobileMenuName(shell, 650)
         menu.classList.add("mobile-menu-closing")
         const finishClose = () => {
-            shell.classList.remove("mobile-menu-commit-close", "mobile-menu-settling")
             menu.classList.remove("mobile-menu-closing")
-            guard?.remove()
         }
         setTimeout(() => {
             if (!close.isConnected || !shell.isConnected) {
                 finishClose()
                 return
             }
-            shell.classList.add("mobile-menu-commit-close")
             completingMobileMenuClose = true
-            for (const type of ["pointerdown", "pointerup", "click"]) {
-                close.dispatchEvent(new PointerEvent(type, {
-                    bubbles: true,
-                    cancelable: true,
-                    pointerId: 1,
-                    pointerType: "touch",
-                    isPrimary: true,
-                    button: 0,
-                }))
-            }
+            close.click()
             completingMobileMenuClose = false
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                shell.classList.remove("mobile-menu-commit-close")
-            }))
-            setTimeout(finishClose, 360)
+            requestAnimationFrame(() => requestAnimationFrame(finishClose))
         }, 260)
     }
 
@@ -424,7 +447,9 @@
             requestAnimationFrame(() => requestAnimationFrame(() => scrollToProjects(false)))
         }
 
-        home.querySelectorAll('a[href*="#case-studies"]').forEach(link => { link.href = "/#projects" })
+        home.querySelectorAll('a[href*="#case-studies"]').forEach(link => {
+            if (link.getAttribute("href") !== "/#projects") link.setAttribute("href", "/#projects")
+        })
         home.querySelectorAll("h1, h2, h3, h4, h5, h6, p").forEach(node => {
             const label = node.textContent.trim().toLowerCase()
             if ((label === "case studies" || label === "projects") && !node.querySelector("a")) {
@@ -487,8 +512,8 @@
                 link.rel = "noopener noreferrer"
             }
             if (label === "case studies" || label === "project" || label === "projects") {
-                link.textContent = "Projects"
-                link.href = "/#projects"
+                if (link.textContent !== "Projects") link.textContent = "Projects"
+                if (link.getAttribute("href") !== "/#projects") link.setAttribute("href", "/#projects")
             }
         })
 
@@ -517,9 +542,9 @@
 
             const existing = links.find(link => link.textContent.trim().toLowerCase() === "blog")
             if (existing) {
-                existing.href = blogUrl
-                existing.target = "_blank"
-                existing.rel = "noopener noreferrer"
+                if (existing.href !== blogUrl) existing.href = blogUrl
+                if (existing.target !== "_blank") existing.target = "_blank"
+                if (existing.rel !== "noopener noreferrer") existing.rel = "noopener noreferrer"
                 return
             }
 
@@ -544,8 +569,8 @@
     document.addEventListener("touchstart", primeProjectTransitionSound, { capture: true, passive: true })
     document.addEventListener("keydown", primeProjectTransitionSound, { capture: true, passive: true })
     document.addEventListener("wheel", primeProjectTransitionSound, { capture: true, passive: true })
-    document.addEventListener("pointerdown", handleMobileMenuClose, true)
-    document.addEventListener("pointerup", handleMobileMenuClose, true)
+    document.addEventListener("pointerdown", trackMobileMenuOpen, true)
+    document.addEventListener("click", trackMobileMenuOpen, true)
     document.addEventListener("click", handleMobileMenuClose, true)
     document.addEventListener("click", handleProjectLink, true)
     addEventListener("scroll", scheduleHomePanelSync, { passive: true })
