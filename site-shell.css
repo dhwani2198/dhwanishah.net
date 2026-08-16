@@ -224,7 +224,7 @@ body:not(.site-home) .site-nav-shell {
     }
 
     html.site-home .framer-Rkf84 .framer-1cf70bh > .framer-rmunsi-container {
-        translate: 0 -3dvh !important;
+        translate: 0 0 !important;
     }
 }
 

@@ -1,5 +1,6 @@
 (() => {
     const resumeUrl = "https://drive.google.com/file/d/1qJUonR6c54pHj2duCbeAAI5cCLDiY3mS/view?usp=sharing"
+    const blogUrl = "https://dhwani0321.substack.com/"
     const connectText = "LET'S CONNECT"
     const flapAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890.,!?"
     const referenceFlapSounds = [1, 2, 3, 4].map(index => `https://www.chloeyan.me/sounds/sound${index}.mp3`)
@@ -476,6 +477,7 @@
             }
             if (shell && shell.id !== "main") shell.classList.add("site-nav-shell")
         })
+        ensureBlogLinks()
 
         document.querySelectorAll("a").forEach(link => {
             const label = link.textContent.trim().toLowerCase()
@@ -505,6 +507,36 @@
         if (scheduled) return
         scheduled = true
         requestAnimationFrame(normalizeSiteShell)
+    }
+
+    function ensureBlogLinks() {
+        document.querySelectorAll(".framer-7EQCV").forEach(navigation => {
+            const links = [...navigation.querySelectorAll("a")]
+            const about = links.find(link => link.textContent.trim().toLowerCase() === "about")
+            if (!about) return
+
+            const existing = links.find(link => link.textContent.trim().toLowerCase() === "blog")
+            if (existing) {
+                existing.href = blogUrl
+                existing.target = "_blank"
+                existing.rel = "noopener noreferrer"
+                return
+            }
+
+            const aboutContainer = about.closest('[data-framer-component-type="RichTextContainer"]')
+            if (!aboutContainer?.parentElement) return
+            const blogContainer = aboutContainer.cloneNode(true)
+            blogContainer.classList.add("site-blog-link")
+            blogContainer.querySelectorAll("[id]").forEach(element => element.removeAttribute("id"))
+            const blog = blogContainer.querySelector("a")
+            if (!blog) return
+            blog.textContent = "Blog"
+            blog.href = blogUrl
+            blog.target = "_blank"
+            blog.rel = "noopener noreferrer"
+            blog.removeAttribute("data-framer-page-link-current")
+            aboutContainer.before(blogContainer)
+        })
     }
 
     scheduleNormalization()

@@ -58,6 +58,43 @@ test("desktop navigation reaches About", async ({ page }) => {
   expect(paperPlaneRequests).not.toContain("/assets/assets/1OjbNDuyowRWI9iGPvfQ40L1qJY.mp4")
 })
 
+test("Blog appears between Projects and About at every navigation breakpoint", async ({ page }) => {
+  for (const viewport of [
+    { width: 1440, height: 1000 },
+    { width: 900, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto("/")
+    if (viewport.width < 810) {
+      await page.locator('.site-nav-shell [data-framer-name="open"]').click()
+      await expect(page.locator('.site-nav-shell [data-framer-name="Phone"]')).toBeVisible()
+    }
+    const navigation = await page.locator(".site-nav-shell").evaluateAll(shells => {
+      const shell = shells.find(element => getComputedStyle(element).display !== "none")
+      const links = [...shell.querySelectorAll("a")]
+        .filter(link => getComputedStyle(link).display !== "none")
+      const blog = links.find(link => link.textContent.trim() === "Blog")
+      const about = links.find(link => link.textContent.trim() === "About")
+      const blogStyle = getComputedStyle(blog)
+      const aboutStyle = getComputedStyle(about)
+      return {
+        order: links.map(link => link.textContent.trim()).filter(label => ["Projects", "Blog", "About", "Resume"].includes(label)),
+        href: blog.href,
+        target: blog.target,
+        rel: blog.rel,
+        style: [blogStyle.fontFamily, blogStyle.fontSize, blogStyle.fontWeight, blogStyle.lineHeight],
+        aboutStyle: [aboutStyle.fontFamily, aboutStyle.fontSize, aboutStyle.fontWeight, aboutStyle.lineHeight],
+      }
+    })
+    expect(navigation.order).toEqual(["Projects", "Blog", "About", "Resume"])
+    expect(navigation.href).toBe("https://dhwani0321.substack.com/")
+    expect(navigation.target).toBe("_blank")
+    expect(navigation.rel).toContain("noopener")
+    expect(navigation.style).toEqual(navigation.aboutStyle)
+  }
+})
+
 test("About header text matches Home placement at every breakpoint", async ({ page }) => {
   for (const viewport of [
     { width: 1440, height: 900 },
@@ -157,7 +194,7 @@ test("homepage split-flap animation stays optically centered at every breakpoint
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
     })
     expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThan(1)
-    const expectedVerticalCenter = viewport.width < 810 ? viewport.height * .47 : viewport.height / 2
+    const expectedVerticalCenter = viewport.height / 2
     expect(Math.abs(box.y + box.height / 2 - expectedVerticalCenter)).toBeLessThan(1)
     await expect(page.locator('[data-flap-sound-source="chloeyan-ferry"]')).toHaveCount(1)
     await expect.poll(() => page.evaluate(() => window.__landingFlapSoundEvents.length)).toBeGreaterThan(0)
@@ -369,6 +406,15 @@ for (const route of routes) {
 
     const resumes = page.getByRole("link", { name: "Resume", exact: true })
     for (const resume of await resumes.all()) await expect(resume).toHaveAttribute("href", resumeUrl)
+    if (await page.locator(".framer-7EQCV").count()) {
+      const blogs = page.locator('.site-nav-shell a').filter({ hasText: /^Blog$/ })
+      await expect.poll(() => blogs.count()).toBeGreaterThan(0)
+      for (const blog of await blogs.all()) {
+        await expect(blog).toHaveAttribute("href", "https://dhwani0321.substack.com/")
+        await expect(blog).toHaveAttribute("target", "_blank")
+        await expect(blog).toHaveAttribute("rel", /noopener/)
+      }
+    }
   })
 }
 
@@ -592,7 +638,7 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
       .map(child => child.getBoundingClientRect())
     const top = Math.min(...visibleAnimation.map(box => box.top))
     const bottom = Math.max(...visibleAnimation.map(box => box.bottom))
-    return Math.abs((top + bottom) / 2 - innerHeight * .47)
+    return Math.abs((top + bottom) / 2 - innerHeight / 2)
   })).toBeLessThanOrEqual(2)
   await expect.poll(() => landing.evaluate(element => Math.abs(element.getBoundingClientRect().height - innerHeight))).toBeLessThan(1)
   const footer = page.locator(".portfolio-meta-footer")
