@@ -67,7 +67,7 @@ test("Blog appears between Projects and About at every navigation breakpoint", a
     await page.setViewportSize(viewport)
     await page.goto("/")
     if (viewport.width < 810) {
-      await page.locator('.site-nav-shell [data-framer-name="open"]').click()
+      await page.locator('.site-nav-shell .mobile-stable-menu-button').click()
       await expect(page.locator('.site-nav-shell [data-framer-name="Phone"]')).toBeVisible()
     }
     const navigation = await page.locator(".site-nav-shell").evaluateAll(shells => {
@@ -423,7 +423,7 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   await page.goto("/")
   const mobileHeader = page.locator(".site-nav-shell").first()
   await expect.poll(() => mobileHeader.evaluate(element => getComputedStyle(element).transform)).toBe("none")
-  const menuButton = mobileHeader.locator('.framer-9sf85-container')
+  const menuButton = mobileHeader.locator('.mobile-stable-menu-button')
   const headerBox = await mobileHeader.boundingBox()
   const menuBox = await menuButton.boundingBox()
   const stableName = mobileHeader.locator(".mobile-stable-name")
@@ -434,7 +434,7 @@ test("mobile navigation opens as a compact top menu", async ({ page }) => {
   const activate = async locator => Number(await page.evaluate(() => navigator.maxTouchPoints)) > 0
     ? locator.tap()
     : locator.click()
-  await activate(page.locator('[data-framer-name="open"]').first())
+  await activate(menuButton)
   await page.waitForTimeout(450)
   await expect(page.getByRole("link", { name: "About", exact: true }).last()).toBeVisible()
   await expect(page.getByRole("link", { name: "Resume", exact: true }).last()).toBeVisible()
@@ -498,7 +498,9 @@ test("mobile About menu keeps the header fixed in place above page animation", a
   const activate = async locator => Number(await page.evaluate(() => navigator.maxTouchPoints)) > 0
     ? locator.tap()
     : locator.click()
-  await activate(header.locator('[data-framer-name="open"]'))
+  const stableButton = header.locator(".mobile-stable-menu-button")
+  const closedButtonBox = await stableButton.boundingBox()
+  await activate(stableButton)
   await page.waitForTimeout(500)
   const transitionNamePositions = await page.evaluate(() => window.__aboutHeaderTransitionPositions)
 
@@ -530,6 +532,7 @@ test("mobile About menu keeps the header fixed in place above page animation", a
 
   await page.evaluate(() => {
     window.__aboutHeaderClosePositions = []
+    window.__aboutButtonClosePositions = []
     const deadline = performance.now() + 500
     const sample = () => {
       const names = [...document.querySelectorAll('.mobile-stable-name')]
@@ -543,15 +546,23 @@ test("mobile About menu keeps the header fixed in place above page animation", a
         const box = name.getBoundingClientRect()
         window.__aboutHeaderClosePositions.push({ x: box.x, y: box.y, width: box.width, height: box.height })
       }
+      const button = document.querySelector(".mobile-stable-menu-button")
+      if (button) {
+        const box = button.getBoundingClientRect()
+        const lines = [...button.children].map(line => line.getBoundingClientRect())
+        const lineCenterY = lines.reduce((sum, line) => sum + line.top + line.height / 2, 0) / lines.length
+        window.__aboutButtonClosePositions.push({ x: box.x, y: box.y, width: box.width, height: box.height, lineCenterY })
+      }
       if (performance.now() < deadline) requestAnimationFrame(sample)
     }
     requestAnimationFrame(sample)
   })
-  await activate(menu.locator('[data-framer-name="close"]'))
+  await activate(stableButton)
   await page.waitForTimeout(700)
   await expect(menu).toHaveCount(0)
   const closedAgainBox = await header.getByRole("link", { name: "Dhwani Shah", exact: true }).boundingBox()
   const closePositions = await page.evaluate(() => window.__aboutHeaderClosePositions)
+  const buttonClosePositions = await page.evaluate(() => window.__aboutButtonClosePositions)
   expect(Math.abs(closedAgainBox.x - closedNameBox.x)).toBeLessThan(1)
   expect(Math.abs(closedAgainBox.y - closedNameBox.y)).toBeLessThan(1)
   expect(Math.abs(closedAgainBox.width - closedNameBox.width)).toBeLessThan(1)
@@ -562,6 +573,14 @@ test("mobile About menu keeps the header fixed in place above page animation", a
     expect(Math.abs(position.y - closedNameBox.y)).toBeLessThan(1)
     expect(Math.abs(position.width - closedNameBox.width)).toBeLessThan(1)
     expect(Math.abs(position.height - closedNameBox.height)).toBeLessThan(1)
+  }
+  expect(buttonClosePositions.length).toBeGreaterThan(3)
+  for (const position of buttonClosePositions) {
+    expect(Math.abs(position.x - closedButtonBox.x)).toBeLessThan(1)
+    expect(Math.abs(position.y - closedButtonBox.y)).toBeLessThan(1)
+    expect(Math.abs(position.width - closedButtonBox.width)).toBeLessThan(1)
+    expect(Math.abs(position.height - closedButtonBox.height)).toBeLessThan(1)
+    expect(Math.abs(position.lineCenterY - (closedButtonBox.y + closedButtonBox.height / 2))).toBeLessThan(1)
   }
 })
 

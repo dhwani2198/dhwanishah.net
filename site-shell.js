@@ -94,38 +94,90 @@
     function ensureMobileStableNames() {
         if (!matchMedia("(max-width: 809.98px)").matches) return
         document.querySelectorAll(".site-nav-shell").forEach(shell => {
-            if (shell.querySelector(".mobile-stable-name")) return
-            const source = [...shell.querySelectorAll("a")].find(link => {
-                if (link.textContent.trim() !== "Dhwani Shah") return false
-                const box = link.getBoundingClientRect()
-                const style = getComputedStyle(link)
-                return box.width > 0 && box.height > 0 && style.visibility !== "hidden" && Number(style.opacity) > 0
-            })
-            if (!source) return
-
             const shellBox = shell.getBoundingClientRect()
-            const box = source.getBoundingClientRect()
-            const style = getComputedStyle(source)
-            const stable = document.createElement("a")
-            stable.className = "mobile-stable-name"
-            stable.href = source.href
-            stable.textContent = "Dhwani Shah"
-            Object.assign(stable.style, {
-                top: `${box.top - shellBox.top}px`,
-                left: `${box.left - shellBox.left}px`,
-                width: `${box.width}px`,
-                height: `${box.height}px`,
-                color: style.color,
-                fontFamily: style.fontFamily,
-                fontSize: style.fontSize,
-                fontStyle: style.fontStyle,
-                fontWeight: style.fontWeight,
-                letterSpacing: style.letterSpacing,
-                lineHeight: style.lineHeight,
-            })
-            shell.appendChild(stable)
-            shell.classList.add("has-mobile-stable-name")
+            if (!shell.querySelector(".mobile-stable-name")) {
+                const source = [...shell.querySelectorAll("a")].find(link => {
+                    if (link.textContent.trim() !== "Dhwani Shah") return false
+                    const box = link.getBoundingClientRect()
+                    const style = getComputedStyle(link)
+                    return box.width > 0 && box.height > 0 && style.visibility !== "hidden" && Number(style.opacity) > 0
+                })
+                if (source) {
+                    const box = source.getBoundingClientRect()
+                    const style = getComputedStyle(source)
+                    const stable = document.createElement("a")
+                    stable.className = "mobile-stable-name"
+                    stable.href = source.href
+                    stable.textContent = "Dhwani Shah"
+                    Object.assign(stable.style, {
+                        top: `${box.top - shellBox.top}px`,
+                        left: `${box.left - shellBox.left}px`,
+                        width: `${box.width}px`,
+                        height: `${box.height}px`,
+                        color: style.color,
+                        fontFamily: style.fontFamily,
+                        fontSize: style.fontSize,
+                        fontStyle: style.fontStyle,
+                        fontWeight: style.fontWeight,
+                        letterSpacing: style.letterSpacing,
+                        lineHeight: style.lineHeight,
+                    })
+                    shell.appendChild(stable)
+                    shell.classList.add("has-mobile-stable-name")
+                }
+            }
+
+            let button = shell.querySelector(".mobile-stable-menu-button")
+            if (!button) {
+                const sourceButton = [...shell.querySelectorAll(".framer-9sf85-container")].find(element => {
+                    const box = element.getBoundingClientRect()
+                    const style = getComputedStyle(element)
+                    return box.width > 0 && box.height > 0 && style.visibility !== "hidden" && Number(style.opacity) > 0
+                })
+                if (sourceButton) {
+                    const box = sourceButton.getBoundingClientRect()
+                    button = document.createElement("button")
+                    button.className = "mobile-stable-menu-button"
+                    button.type = "button"
+                    button.setAttribute("aria-label", "Open menu")
+                    Object.assign(button.style, {
+                        top: `${box.top - shellBox.top}px`,
+                        left: `${box.left - shellBox.left}px`,
+                        width: `${box.width}px`,
+                        height: `${box.height}px`,
+                    })
+                    button.append(document.createElement("span"), document.createElement("span"))
+                    shell.appendChild(button)
+                    shell.classList.add("has-mobile-stable-menu-button")
+                }
+            }
+            const isOpen = Boolean(shell.querySelector('.framer-7EQCV[data-framer-name="Phone"]'))
+            button?.classList.toggle("is-open", isOpen)
+            button?.setAttribute("aria-expanded", String(isOpen))
+            button?.setAttribute("aria-label", isOpen ? "Close menu" : "Open menu")
         })
+    }
+
+    function handleStableMobileMenuButton(event) {
+        if (!matchMedia("(max-width: 809.98px)").matches) return
+        const target = event.target instanceof Element ? event.target : event.target?.parentElement
+        const button = target?.closest(".mobile-stable-menu-button")
+        if (!button) return
+        const shell = button.closest(".site-nav-shell")
+        const control = shell?.querySelector('[data-framer-name="close"], [data-framer-name="open"]')
+        if (!control) return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        for (const type of ["pointerdown", "pointerup", "click"]) {
+            control.dispatchEvent(new PointerEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                pointerId: 1,
+                pointerType: "touch",
+                isPrimary: true,
+                button: 0,
+            }))
+        }
     }
 
     function alignMobileMenus() {
@@ -589,6 +641,7 @@
     document.addEventListener("wheel", primeProjectTransitionSound, { capture: true, passive: true })
     document.addEventListener("pointerdown", trackMobileMenuOpen, true)
     document.addEventListener("click", trackMobileMenuOpen, true)
+    document.addEventListener("click", handleStableMobileMenuButton, true)
     document.addEventListener("click", handleMobileMenuClose, true)
     document.addEventListener("click", handleProjectLink, true)
     addEventListener("scroll", scheduleHomePanelSync, { passive: true })
