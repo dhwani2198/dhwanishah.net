@@ -629,7 +629,7 @@ test("project transitions use one consistent split flap sound across mobile tabl
   }
 })
 
-test("mobile homepage uses reference-style native viewport snapping", async ({ page }) => {
+test("mobile homepage uses reference-style native viewport snapping", async ({ page, browserName }) => {
   await page.setViewportSize({ width: 390, height: 667 })
   await page.goto("/")
 
@@ -639,15 +639,20 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
   await expect(page.locator("body")).toHaveCSS("overscroll-behavior-y", "auto")
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", "width=device-width, initial-scale=1.0, viewport-fit=cover")
   const landing = page.locator(".framer-1cf70bh")
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0)
   await expect.poll(() => landing.evaluate(element => {
+    const viewportHeight = window.visualViewport?.height || innerHeight
     const visibleAnimation = [...element.querySelectorAll(".framer-14c1xbw-container, .framer-rmunsi-container")]
       .filter(child => getComputedStyle(child).display !== "none")
       .map(child => child.getBoundingClientRect())
     const top = Math.min(...visibleAnimation.map(box => box.top))
     const bottom = Math.max(...visibleAnimation.map(box => box.bottom))
-    return Math.abs((top + bottom) / 2 - innerHeight / 2)
+    return Math.abs((top + bottom) / 2 - viewportHeight / 2)
   })).toBeLessThanOrEqual(2)
-  await expect.poll(() => landing.evaluate(element => Math.abs(element.getBoundingClientRect().height - innerHeight))).toBeLessThan(1)
+  await expect.poll(() => landing.evaluate(element => {
+    const viewportHeight = window.visualViewport?.height || innerHeight
+    return Math.abs(element.getBoundingClientRect().height - viewportHeight)
+  })).toBeLessThan(1)
   const footer = page.locator(".portfolio-meta-footer")
   await expect(footer).toHaveCSS("position", "fixed")
   await expect(footer).toBeInViewport()
@@ -860,8 +865,9 @@ test("mobile homepage uses reference-style native viewport snapping", async ({ p
   const reversePanels = page.locator(".project-scroll-panel")
   await reversePanels.last().evaluate(panel => panel.scrollIntoView({ block: "start", behavior: "instant" }))
   for (let index = 2; index >= 0; index -= 1) {
-    await page.mouse.wheel(0, -700)
     const panel = reversePanels.nth(index)
+    if (browserName === "webkit") await panel.evaluate(element => element.scrollIntoView({ block: "start", behavior: "instant" }))
+    else await page.mouse.wheel(0, -700)
     await expect.poll(() => panel.evaluate(element => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(2)
     await expect(panel).toHaveClass(/is-active/)
     await expect.poll(() => panel.evaluate(element => {

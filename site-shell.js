@@ -29,6 +29,8 @@
     function normalizeViewport() {
         const viewport = document.querySelector('meta[name="viewport"]')
         if (viewport && viewport.content !== viewportContent) viewport.content = viewportContent
+        const mobileHeight = window.visualViewport?.height || innerHeight
+        document.documentElement.style.setProperty("--mobile-landing-height", `${mobileHeight}px`)
     }
 
     function scrollToProjects(updateHash = true) {
@@ -124,6 +126,21 @@
             shell.classList.remove("mobile-menu-name-frozen")
             freeze.remove()
         }, duration)
+    }
+
+    function alignMobileMenus() {
+        if (!matchMedia("(max-width: 809.98px)").matches) return
+        document.querySelectorAll('.site-nav-shell .framer-7EQCV[data-framer-name="Phone"]').forEach(menu => {
+            const translate = getComputedStyle(menu).translate
+            const parts = translate === "none" ? [] : translate.split(/\s+/).map(Number.parseFloat)
+            const currentX = Number.isFinite(parts[0]) ? parts[0] : 0
+            const currentY = Number.isFinite(parts[1]) ? parts[1] : 0
+            const box = menu.getBoundingClientRect()
+            const nextX = currentX - box.left
+            const nextY = currentY - box.top
+            if (Math.abs(box.left) < .1 && Math.abs(box.top) < .1) return
+            menu.style.setProperty("translate", `${nextX}px ${nextY}px`, "important")
+        })
     }
 
     function handleMobileMenuClose(event) {
@@ -503,6 +520,7 @@
             if (shell && shell.id !== "main") shell.classList.add("site-nav-shell")
         })
         ensureBlogLinks()
+        alignMobileMenus()
 
         document.querySelectorAll("a").forEach(link => {
             const label = link.textContent.trim().toLowerCase()
@@ -575,6 +593,7 @@
     document.addEventListener("click", handleProjectLink, true)
     addEventListener("scroll", scheduleHomePanelSync, { passive: true })
     addEventListener("resize", scheduleHomePanelSync)
+    window.visualViewport?.addEventListener("resize", scheduleNormalization)
     addEventListener("hashchange", () => {
         projectHashHandled = false
         scheduleNormalization()
