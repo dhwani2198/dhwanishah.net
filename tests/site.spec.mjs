@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 const routes = ["/", "/about", "/tally", "/sprint-x", "/curalink", "/architectural-design"]
-const resumeUrl = "https://drive.google.com/file/d/1qJUonR6c54pHj2duCbeAAI5cCLDiY3mS/view?usp=sharing"
+const resumeUrl = "https://flowcv.com/resume/la3q6sc74157"
 
 for (const route of routes) {
   test(`${route} renders without missing local resources`, async ({ page }) => {

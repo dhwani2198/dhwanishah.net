@@ -1,5 +1,5 @@
 (() => {
-    const resumeUrl = "https://drive.google.com/file/d/1qJUonR6c54pHj2duCbeAAI5cCLDiY3mS/view?usp=sharing"
+    const resumeUrl = "https://flowcv.com/resume/la3q6sc74157"
     const blogUrl = "https://dhwani0321.substack.com/"
     const connectText = "LET'S CONNECT"
     const flapAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890.,!?"
