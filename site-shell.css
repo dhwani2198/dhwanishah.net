@@ -269,6 +269,13 @@ body.site-home { overscroll-behavior-y: auto; }
     scroll-snap-stop: normal;
 }
 
+@media (min-width: 1200px) {
+    html.site-home .framer-Rkf84 .framer-1cf70bh > .framer-14c1xbw-container {
+        /* The Framer component has extra empty canvas on its right edge. */
+        translate: 43.5px 0 !important;
+    }
+}
+
 .project-scroll-panel {
     width: min(1059px, calc(100vw - (2 * var(--site-edge-x)))) !important;
     max-width: calc(100vw - (2 * var(--site-edge-x))) !important;

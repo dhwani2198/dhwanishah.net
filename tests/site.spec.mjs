@@ -190,8 +190,21 @@ test("homepage split-flap animation stays optically centered at every breakpoint
     const box = await page.locator(".framer-1cf70bh").evaluate(section => {
       const flap = [...section.querySelectorAll(".framer-14c1xbw-container, .framer-rmunsi-container")]
         .find(element => getComputedStyle(element).display !== "none")
-      const bounds = flap.getBoundingClientRect()
-      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+      const flapBounds = flap.getBoundingClientRect()
+      if (!matchMedia("(min-width: 1200px)").matches) {
+        return { x: flapBounds.x, y: flapBounds.y, width: flapBounds.width, height: flapBounds.height }
+      }
+      const cells = [...flap.querySelectorAll("div")]
+        .filter(element => {
+          const bounds = element.getBoundingClientRect()
+          return getComputedStyle(element).backgroundColor === "rgb(31, 31, 31)"
+            && bounds.width > 10
+            && bounds.height > 10
+        })
+        .map(element => element.getBoundingClientRect())
+      const left = Math.min(...cells.map(bounds => bounds.left))
+      const right = Math.max(...cells.map(bounds => bounds.right))
+      return { x: left, y: flapBounds.y, width: right - left, height: flapBounds.height }
     })
     expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThan(1)
     const expectedVerticalCenter = viewport.height / 2
