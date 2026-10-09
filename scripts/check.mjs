@@ -21,7 +21,7 @@ if (aboutHtml.includes('src="/assets/assets/1OjbNDuyowRWI9iGPvfQ40L1qJY.mp4"')) 
   throw new Error("/about: initial HTML still loads the legacy paper-plane animation")
 }
 
-const aboutBundle = await readFile(`${siteRoot}/assets/sites/1O6HJjFgTJMJ8aISDQc9XC/6vIF-Ykiodl71zXR0dqgTH0n5VpjaZV4CIbidXfcs_4.0vQvg7Qz.mjs`, "utf8")
+const aboutBundle = await readFile(`${siteRoot}/assets/sites/1O6HJjFgTJMJ8aISDQc9XC/about-centered-portrait.20261009.mjs`, "utf8")
 if (!aboutBundle.includes("/assets/assets/paper-plane-low-poly-3d-v7-hq.mp4")) {
   throw new Error("/about: client-navigation bundle does not use the current paper-plane animation")
 }
