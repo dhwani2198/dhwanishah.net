@@ -10,6 +10,21 @@ export function animationVariant() {
 function mediaName(name, variant) {
   return `${name}-${variant}`;
 }
+// Center the illustration inside the original export's uneven empty margins.
+// These are the main artwork bounds; sparse star particles stay decorative.
+const aboutArtwork = {
+  desktop: {width:3840,height:2160,left:112,right:3492},
+  tablet: {width:3840,height:2880,left:120,right:3492},
+  phone: {width:2160,height:3840,left:68,right:1966},
+};
+function centerAboutArtwork(frame, variant) {
+  const artwork = aboutArtwork[variant];
+  const box = frame.getBoundingClientRect();
+  const scale = variant === 'phone' ? box.width / artwork.width :
+    Math.min(box.width / artwork.width, box.height / artwork.height);
+  const offset = (artwork.width / 2 - (artwork.left + artwork.right) / 2) * scale;
+  frame.style.setProperty('--artwork-shift-x', `${offset}px`);
+}
 export function animationIsActive(animation) {
   const name = animation.frame.dataset.animation;
   return document.body.dataset.view === name && !(name === 'about' &&
@@ -113,6 +128,7 @@ export function updateAnimationPlayback() {
     const {video, frame, poster} = animation;
     if (animationIsActive(animation)) {
       const variant = animationVariant();
+      if (frame.dataset.animation === 'about') centerAboutArtwork(frame, variant);
       const name = mediaName(frame.dataset.animation, variant);
       const source = `/media/${name}.mp4`;
       if (animation.variant !== variant) {

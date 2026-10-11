@@ -159,7 +159,7 @@ for(const target of ['control','canvas'])test(`browser-required ${target} tap re
   await expect.poll(()=>scene.locator('video').evaluate(v=>v.currentTime)).toBeGreaterThan(initial+.2);
 });
 
-for(const [width,height] of [[320,568],[393,641],[430,932]])test(`phone ${width} × ${height} uses the original 4K portrait composition without added sky`,async({page})=>{
+for(const [width,height] of [[320,568],[393,641],[430,932]])test(`phone ${width} × ${height} shows every edge of the original 4K portrait composition`,async({page})=>{
   await page.setViewportSize({width,height});
   await page.goto('/');
   const video=page.locator('#home-scene video');
@@ -174,35 +174,41 @@ for(const [width,height] of [[320,568],[393,641],[430,932]])test(`phone ${width}
     return {left:box.x+(box.width-v.videoWidth*scale)/2,right:box.x+(box.width+v.videoWidth*scale)/2,
       top:box.y+(box.height-v.videoHeight*scale)/2,bottom:box.y+(box.height+v.videoHeight*scale)/2};
   });
-  // The supplied portrait movie fills the screen with its own composition.
-  expect(view.left).toBeLessThanOrEqual(.01);
-  expect(view.right).toBeGreaterThanOrEqual(width-.01);
-  expect(view.top).toBeLessThanOrEqual(.01);
-  expect(view.bottom).toBeGreaterThanOrEqual(height-.01);
+  // Every pixel of the original movie stays visible, including on taller phones.
+  expect(view.left).toBeGreaterThanOrEqual(-.01);
+  expect(view.right).toBeLessThanOrEqual(width+.01);
+  expect(view.top).toBeGreaterThanOrEqual(-.01);
+  expect(view.bottom).toBeLessThanOrEqual(height+.01);
   expect((view.left+view.right)/2).toBeCloseTo(width/2);
   expect((view.top+view.bottom)/2).toBeCloseTo(height/2);
 });
 
-for(const [width,height] of [[390,664],[430,932]])test(`portrait phone ${width} × ${height} shows the full About illustration across the available width`,async({page})=>{
+for(const [width,height] of [[320,568],[393,641],[390,664],[430,932]])test(`portrait phone ${width} × ${height} centers the full About illustration in the poster and playing video`,async({page})=>{
   await page.setViewportSize({width,height});
   await page.goto('/about');
   const picture=page.locator('.about-hero .scene-poster');
   await picture.evaluate(n=>n.decode());
-  const artwork=await picture.evaluate(n=>{
-    const rect=n.getBoundingClientRect(),fit=getComputedStyle(n).objectFit;
-    const scale=(fit==='cover'?Math.max:Math.min)(rect.width/n.naturalWidth,rect.height/n.naturalHeight);
-    // Measured occupied area in the supplied 4K poster (empty margins excluded).
-    const x=rect.x+(rect.width-n.naturalWidth*scale)/2;
-    const y=rect.y+(rect.height-n.naturalHeight*scale)/2;
-    return {left:x+53*scale,right:x+2073*scale,top:y+1389*scale,bottom:y+2473*scale};
-  });
-  expect(artwork.right-artwork.left).toBeGreaterThan(width*.93);
-  expect(artwork.left).toBeGreaterThanOrEqual(0);
-  expect(artwork.right).toBeLessThanOrEqual(width);
+  const video=page.locator('.about-hero .scene-video');
+  await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1&&v.videoHeight===3840),{timeout:20000}).toBe(true);
   const nav=await page.locator('.site-nav').boundingBox();
   const read=await page.locator('.about-read').boundingBox();
+  for(const media of [picture,video]){
+  const artwork=await media.evaluate(n=>{
+    const rect=n.getBoundingClientRect(),fit=getComputedStyle(n).objectFit;
+    const width=n.naturalWidth||n.videoWidth,height=n.naturalHeight||n.videoHeight;
+    const scale=(fit==='cover'?Math.max:Math.min)(rect.width/width,rect.height/height);
+    // Measured occupied area in the supplied 4K poster (empty margins excluded).
+    const x=rect.x+(rect.width-width*scale)/2;
+    const y=rect.y+(rect.height-height*scale)/2;
+    return {left:x+68*scale,right:x+1966*scale,top:y+1388*scale,bottom:y+2282*scale};
+  });
+  expect(artwork.right-artwork.left).toBeGreaterThan(width*.87);
+  expect(artwork.left).toBeGreaterThanOrEqual(0);
+  expect(artwork.right).toBeLessThanOrEqual(width);
+  expect((artwork.left+artwork.right)/2).toBeCloseTo(width/2,1);
   expect(artwork.top).toBeGreaterThan(nav.y+nav.height);
   expect(artwork.bottom).toBeLessThan(read.y);
+  }
 });
 
 test('phone toolbar height changes keep the frame filled and playback continuous',async({page})=>{

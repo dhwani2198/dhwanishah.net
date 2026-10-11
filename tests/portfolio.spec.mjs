@@ -183,6 +183,44 @@ test('About plays its original 4K animation and pauses when the biography is vis
   await expect.poll(()=>page.locator('#about-scene video').evaluate(video=>video.paused)).toBe(true);
 });
 
+test('About centers the visible artwork across desktop, tablet, phone, and orientation changes',async({page})=>{
+  const layouts=[
+    {width:1440,height:900,variant:'desktop',sourceWidth:3840,sourceHeight:2160,bounds:[112,132,3492,1720]},
+    {width:1920,height:1080,variant:'desktop',sourceWidth:3840,sourceHeight:2160,bounds:[112,132,3492,1720]},
+    {width:1280,height:720,variant:'desktop',sourceWidth:3840,sourceHeight:2160,bounds:[112,132,3492,1720]},
+    {width:768,height:1024,variant:'tablet',sourceWidth:3840,sourceHeight:2880,bounds:[120,492,3492,2080]},
+    {width:1024,height:768,variant:'tablet',sourceWidth:3840,sourceHeight:2880,bounds:[120,492,3492,2080]},
+    {width:393,height:641,variant:'phone',sourceWidth:2160,sourceHeight:3840,bounds:[68,1388,1966,2282]},
+    {width:844,height:390,variant:'desktop',sourceWidth:3840,sourceHeight:2160,bounds:[112,132,3492,1720]},
+    {width:1440,height:900,variant:'desktop',sourceWidth:3840,sourceHeight:2160,bounds:[112,132,3492,1720]},
+  ];
+  await page.setViewportSize({width:layouts[0].width,height:layouts[0].height});
+  await page.goto('/about');
+  const video=page.locator('.about-hero .scene-video');
+  for(const layout of layouts){
+    await page.setViewportSize({width:layout.width,height:layout.height});
+    await expect.poll(()=>video.evaluate(v=>[v.videoWidth,v.videoHeight]),{timeout:20000}).toEqual([layout.sourceWidth,layout.sourceHeight]);
+    await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1)).toBe(true);
+    await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain(`/media/about-${layout.variant}.mp4`);
+    const nav=await page.locator('.site-nav').boundingBox();
+    for(const media of [video,page.locator('.about-hero .scene-poster')]){
+      const art=await media.evaluate((node,layout)=>{
+        const box=node.getBoundingClientRect();
+        const scale=Math.min(box.width/layout.sourceWidth,box.height/layout.sourceHeight);
+        const x=box.x+(box.width-layout.sourceWidth*scale)/2;
+        const y=box.y+(box.height-layout.sourceHeight*scale)/2;
+        const [left,top,right,bottom]=layout.bounds;
+        return {left:x+left*scale,right:x+right*scale,top:y+top*scale,bottom:y+bottom*scale};
+      },layout);
+      expect((art.left+art.right)/2).toBeCloseTo(layout.width/2,1);
+      expect(art.left).toBeGreaterThanOrEqual(0);
+      expect(art.right).toBeLessThanOrEqual(layout.width);
+      expect(art.top).toBeGreaterThan(nav.y+nav.height);
+      expect(art.bottom).toBeLessThan(layout.height);
+    }
+  }
+});
+
 test('local pages render without missing assets or script errors',async({page})=>{
   const errors=[];
   page.on('pageerror',error=>errors.push(error.message));
@@ -198,7 +236,7 @@ test('local pages render without missing assets or script errors',async({page})=
 test('landing fills the viewport and View projects has a pill',async({page,isMobile})=>{
   await page.goto('/');
   const styles=await page.locator('#home-scene .scene-poster').evaluate(node=>({fit:getComputedStyle(node).objectFit,rect:node.getBoundingClientRect().toJSON()}));
-  expect(styles.fit).toBe('cover');
+  expect(styles.fit).toBe(isMobile?'contain':'cover');
   const scene=await page.locator('#home-scene').boundingBox();
   expect(styles.rect.width).toBe(scene.width);
   expect(styles.rect.height).toBe(scene.height);

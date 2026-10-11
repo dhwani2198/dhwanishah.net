@@ -135,8 +135,8 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
 .prototype-mount:empty{display:none}
 .prototype-mount iframe{display:block;border:1px solid #ffffff0f;border-radius:6px;width:100%;height:620px;background:#fff;margin-top:24px}
 .about-hero{position:relative;height:100svh;height:100dvh;min-height:0;background:#000;overflow:hidden}
-.about-hero .animation-frame{top:calc(max(24px,env(safe-area-inset-top)) + 64px);bottom:max(34px,calc(env(safe-area-inset-bottom) + 12px))}
-.about-hero .scene-video,.about-hero .scene-poster{object-fit:contain}
+.about-hero .animation-frame{top:calc(max(24px,env(safe-area-inset-top)) + 64px);bottom:max(34px,calc(env(safe-area-inset-bottom) + 12px));background:#03020a}
+.about-hero .scene-video,.about-hero .scene-poster{left:var(--artwork-shift-x,0px);right:auto;object-fit:contain;object-position:50% 50%}
 .about-read{position:absolute;z-index:2;bottom:90px;left:50%;transform:translateX(-50%);font:10px var(--mono);display:flex;gap:16px;align-items:center;padding:12px 18px;border:1px solid #ffffff10;border-radius:28px;background:#0d0d13c9;backdrop-filter:blur(20px)}
 #about-story{background:#000;min-height:100svh}
 .about-back{display:flex;align-items:center;gap:12px;width:fit-content;margin:0 auto;padding:120px 20px 10px;font:10px var(--mono);color:#aaa99f}
@@ -180,9 +180,12 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
  .about-content{padding:45px max(26px,calc(env(safe-area-inset-right) + 12px)) 130px max(26px,calc(env(safe-area-inset-left) + 12px))}.about-chapter{grid-template-columns:1fr;gap:14px;margin-bottom:65px}.about-chapter p{font-size:16px;line-height:1.8}.about-chapter:first-child p:first-child{font-size:16px;line-height:1.8}.about-chapter>.section-label{margin:0 0 10px}.portrait{width:130px;margin:4px 0 20px 20px}.about-read{bottom:85px}.about-hero .animation-frame{top:calc(max(18px,env(safe-area-inset-top)) + 60px);bottom:max(40px,calc(env(safe-area-inset-bottom) + 18px))}.about-back{padding-top:100px}.art-grid{gap:14px}.art-grid figure{height:230px}.credentials{grid-template-columns:1fr;gap:28px;padding:30px 0}.credentials li{font-size:13px}.credentials .section-label{margin-bottom:12px}.everyday{margin-bottom:55px}.connect{margin-top:35px;padding-top:40px}.contact-links{font-size:9px;gap:18px}.connect-email{gap:24px;font-size:clamp(38px,12vw,57px)}
 }
 @media(max-height:700px) and (max-width:759px){.preview-panel{max-width:clamp(240px,39svh,440px)}.projects-scene{padding-top:max(90px,calc(env(safe-area-inset-top) + 76px))}.projects-intro{margin-bottom:15px}.project-stage{gap:15px}.project-name{font-size:27px}.preview-description{font-size:8px}.preview-tags{display:none}.preview-open{margin-top:7px;padding-top:7px}.preview-details{padding:10px}.scene{min-height:360px}}
-/* Fill the phone's width by cropping the portrait movie's empty vertical space. */
+/* Preserve the entire supplied phone homepage composition at every screen ratio. */
 @media(max-width:759px) and (orientation:portrait){
- .about-hero .scene-video,.about-hero .scene-poster{height:auto;aspect-ratio:9/16;inset:auto 0;top:50%;transform:translateY(-50%);object-fit:contain}
+ .scene.home-scene{background:#0b0711}
+ .home-scene .scene-video,.home-scene .scene-poster{object-fit:contain;object-position:50% 50%}
+ /* Explicit geometry keeps the video and poster aligned on mobile Safari. */
+ .about-hero .scene-video,.about-hero .scene-poster{width:100%;height:calc(100vw * 16 / 9);aspect-ratio:auto;inset:auto;left:var(--artwork-shift-x,0px);top:calc(50% - 100vw * 8 / 9);transform:none;object-fit:contain;object-position:50% 50%}
 }
 @media(max-height:600px) and (min-width:760px){.projects-scene{padding-top:100px;padding-bottom:65px}.projects-intro{margin-bottom:18px}.project-stage{min-height:0}.project-name{font-size:38px}.preview-panel{max-width:300px}.preview-description{margin:8px 0}.preview-details{padding:12px 16px}.preview-open{margin-top:10px;padding-top:10px}dialog{inset:80px 5vw 52px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
