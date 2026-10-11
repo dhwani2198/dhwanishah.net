@@ -18,7 +18,7 @@ const touch = matchMedia('(hover: none)');
 const sparks=Object.fromEntries(['home','about'].map(name=>[
   name,attachPointerSparks(document.querySelector(`.${name}-sparks`),name==='about'?document.querySelector('.about-hero'):scenes.home,reducedMotion),
 ]));
-animateGreeting(document.querySelector('.hello-text'),reducedMotion);
+animateGreeting(document.querySelector('.hello-text'));
 let selectedProject = null;
 let currentView = null;
 let currentArticle = viewerContent.querySelector('[data-article]')?.dataset.article;
@@ -103,34 +103,51 @@ function animationVariant() {
 }
 const animations = [...document.querySelectorAll('[data-animation]')].map(frame=> {
   const video=frame.querySelector('video'), poster=frame.querySelector('.scene-poster'), button=frame.querySelector('.animation-toggle');
-  const animation={frame,video,poster,button,userPaused:false,visible:true,failed:false,variant:null};
+  const animation={frame,video,poster,button,userPaused:false,failed:false,variant:null};
   video.muted=true;
+  video.defaultMuted=true;
+  video.playsInline=true;
   video.addEventListener('playing',()=> {
     if (!shouldPlay(animation)) {video.pause();return;}
     frame.classList.add('is-playing');
+    paintPlaybackControl(animation);
   });
   video.addEventListener('error',()=> {
     animation.failed=true;
     frame.classList.remove('is-playing');
-    button.hidden=true;
+    paintPlaybackControl(animation);
   });
   button.addEventListener('click',()=> {
-    animation.userPaused = !video.paused;
-    if (animation.userPaused) video.pause();
-    else {animation.userPaused=false;animation.failed=false;video.play().catch(()=>{button.setAttribute('aria-label','Play animation');});}
+    if(!video.paused){animation.userPaused=true;updatePlayback();return;}
+    animation.userPaused=false;
+    if(animation.failed){video.removeAttribute('src');animation.failed=false;}
+    // Setting the source and calling play happen synchronously inside this
+    // trusted tap, including when Safari has blocked automatic playback.
     updatePlayback();
   });
   return animation;
 });
 
+function animationIsActive(animation){
+  return currentView===animation.frame.dataset.animation && !(currentView==='about' && document.body.dataset.aboutStory==='true');
+}
 function shouldPlay(animation) {
-  return currentView===animation.frame.dataset.animation && !(currentView==='about' && document.body.dataset.aboutStory==='true') && !document.hidden && !dialog.open && !reducedMotion.matches && !animation.userPaused && animation.visible && !animation.failed;
+  return animationIsActive(animation) && !document.hidden && !dialog.open && !animation.userPaused && !animation.failed;
+}
+function paintPlaybackControl(animation){
+  const {frame,video,button}=animation;
+  button.hidden=!animationIsActive(animation);
+  const paused=video.paused||animation.userPaused||animation.failed;
+  const loading=!paused&&!frame.classList.contains('is-playing');
+  button.classList.toggle('has-label',paused||loading);
+  button.textContent=paused?(animation.failed?'Retry animation':'Play animation'):loading?'Loading…':'Ⅱ';
+  button.setAttribute('aria-label',paused?(animation.failed?'Retry animation':'Play animation'):'Pause animation');
 }
 function updatePlayback() {
   for (const animation of animations) {
     const {frame,video,poster,button}=animation;
-    const active=currentView===frame.dataset.animation && !(currentView==='about' && document.body.dataset.aboutStory==='true');
-    sparks[frame.dataset.animation].setActive(active&&!dialog.open&&!animation.userPaused);
+    const active=animationIsActive(animation);
+    sparks[frame.dataset.animation].setActive(active&&!dialog.open,!animation.userPaused);
     if(active) {
       const variant=animationVariant();
       if(animation.variant!==variant) {
@@ -140,33 +157,24 @@ function updatePlayback() {
         video.poster=poster.src;
         if(video.hasAttribute('src')) {video.pause();video.removeAttribute('src');video.load();}
       }
-      if(!reducedMotion.matches && !animation.failed && !video.hasAttribute('src')) {
+      if(!animation.failed && !video.hasAttribute('src')) {
         video.src=`/media/${frame.dataset.animation}-${variant}.mp4`;
         video.load();
       }
     }
     if(shouldPlay(animation)) {
-      video.play().catch(()=> {frame.classList.remove('is-playing');button.textContent='▷';button.setAttribute('aria-label','Play animation');});
+      video.play().catch(()=> {
+        if(!animationIsActive(animation)||animation.userPaused)return;
+        frame.classList.remove('is-playing');paintPlaybackControl(animation);
+      });
     } else video.pause();
-    button.hidden=!active || reducedMotion.matches || animation.failed;
-    const paused=animation.userPaused || video.paused;
-    button.textContent=paused?'▷':'Ⅱ';
-    button.setAttribute('aria-label',paused?'Play animation':'Pause animation');
+    paintPlaybackControl(animation);
   }
 }
 for(const animation of animations) {
-  animation.video.addEventListener('play',()=>{animation.button.textContent='Ⅱ';animation.button.setAttribute('aria-label','Pause animation');});
-  animation.video.addEventListener('pause',()=>{animation.button.textContent='▷';animation.button.setAttribute('aria-label','Play animation');});
-  new IntersectionObserver(entries=> {
-    animation.visible=entries[0].intersectionRatio>.15;
-    updatePlayback();
-  },{threshold:[0,.15]}).observe(animation.frame);
+  for(const name of ['play','pause','waiting'])animation.video.addEventListener(name,()=>paintPlaybackControl(animation));
 }
 document.addEventListener('visibilitychange',updatePlayback);
-reducedMotion.addEventListener('change',()=> {
-  if(reducedMotion.matches) for(const {video,frame} of animations) {video.pause();video.removeAttribute('src');video.load();frame.classList.remove('is-playing');}
-  updatePlayback();
-});
 
 function routeState() {
   const path=location.pathname.replace(/\/$/,'')||'/';

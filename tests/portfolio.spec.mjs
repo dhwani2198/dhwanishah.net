@@ -135,14 +135,15 @@ test('San Francisco clock handles both PST and PDT',async({page})=>{
   expect(times).toEqual(['My local time — 12:10:41 PM PST','My local time — 4:10:41 PM PDT']);
 });
 
-test('reduced motion uses native-resolution posters without requesting video',async({page})=>{
-  const videos=[];page.on('request',request=>{if(request.url().endsWith('.mp4'))videos.push(request.url());});
+test('core animations keep playing with Reduce Motion, matching the original website',async({page})=>{
   await page.goto('/');
-  await expect(page.locator('#home-scene .scene-poster')).toBeVisible();
-  await expect(page.locator('#home-scene video')).not.toHaveAttribute('src');
+  await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>!video.paused&&video.currentTime>0&&Math.max(video.videoWidth,video.videoHeight)===3840),{timeout:20000}).toBe(true);
   await page.getByRole('link',{name:'About',exact:true}).click();
-  await expect(page.locator('#about-scene .scene-poster')).toBeVisible();
-  expect(videos).toEqual([]);
+  await expect.poll(()=>page.locator('#about-scene video').evaluate(video=>!video.paused&&video.currentTime>0&&Math.max(video.videoWidth,video.videoHeight)===3840),{timeout:20000}).toBe(true);
+  await page.locator('.about-read').click();
+  await page.locator('.connect').scrollIntoViewIfNeeded();
+  await expect.poll(()=>page.locator('.hello-text').textContent()).not.toBe('Say hello');
+  await expect(page.locator('.hello-text')).toHaveText('Say hello',{timeout:4000});
 });
 
 test('supplied 4K video plays and pauses when Projects opens',async({page,isMobile})=>{
@@ -340,13 +341,10 @@ test('homepage cursor sparks fade, pause, and leave navigation clickable',async(
   await expect.poll(()=>sparkPixels(page)).toBe(0);
 });
 
-test('reduced motion and touch do not trigger the cursor overlay',async({page,isMobile})=> {
+test('reduced motion suppresses automatic cursor trails',async({page})=> {
   await page.goto('/');
   await expect(page.locator('#local-time')).toContainText(/\d/);
-  if(isMobile) {
-    await page.emulateMedia({reducedMotion:'no-preference'});
-    await page.touchscreen.tap(160,350);
-  } else await page.mouse.move(720,390);
+  await page.mouse.move(160,350);
   expect(await sparkPixels(page)).toBe(0);
   await page.getByRole('link',{name:'View projects',exact:true}).click();
   await expect(page.locator('#projects-scene')).toBeVisible();
