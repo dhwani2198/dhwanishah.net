@@ -8,7 +8,7 @@ export function animationVariant() {
   return innerWidth / innerHeight <= 1.5 ? 'tablet' : 'desktop';
 }
 function mediaName(name, variant) {
-  return name === 'home' && variant === 'phone' ? 'home-phone-full' : `${name}-${variant}`;
+  return `${name}-${variant}`;
 }
 export function animationIsActive(animation) {
   const name = animation.frame.dataset.animation;

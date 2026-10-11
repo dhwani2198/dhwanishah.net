@@ -55,14 +55,5 @@ for(const p of data.projects) {
   assert.equal(p.preview,p.illustration,'Use the selected static project cover');
   assert.ok(!p.previewVideo,'Project previews must be static');
 }
-const phone=JSON.parse(await readFile(resolve(root,'public/media/phone-framing.json'),'utf8'));
-const phoneVideo=await readFile(resolve(root,`public/media/${phone.name}.mp4`));
-assert.equal(createHash('sha256').update(phoneVideo).digest('hex'),phone.sha256,'Keep the approved full-valley 4K phone render');
-assert.equal(phoneVideo.length,phone.bytes);
-assert.deepEqual([phone.width,phone.height,phone.fps],[2160,3840,30]);
-assert.equal(phone.sourceSha256,videos.find(video=>video.name===phone.source).sha256);
-assert.equal(phone.skySourceSha256,videos.find(video=>video.name===phone.skySource).sha256);
-const phonePoster=await readFile(resolve(root,`public/media/${phone.name}.webp`));
-assert.equal(createHash('sha256').update(phonePoster).digest('hex'),phone.posterSha256);
 for(const file of ['src/app.js','src/animations.js','src/ascii.js','src/sparks.js','src/case-study.js','src/render.mjs','scripts/serve.mjs','scripts/build.mjs','scripts/prepare-topnotch.mjs','scripts/restore-media.mjs','scripts/split-media.mjs'])execFileSync(process.execPath,['--check',resolve(root,file)]);
-console.log(`Verified ${Object.keys(provenance).length} published assets, 6 original 4K videos, the full-valley 4K phone render, content, previews, and JavaScript.`);
+console.log(`Verified ${Object.keys(provenance).length} published assets, 6 original 4K videos, content, previews, and JavaScript.`);

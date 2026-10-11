@@ -5,7 +5,6 @@ import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const videos = JSON.parse(await readFile(resolve(root, 'public/media/manifest.json'), 'utf8'));
-videos.push(JSON.parse(await readFile(resolve(root, 'public/media/phone-framing.json'), 'utf8')));
 const chunkSize = 48 * 1024 * 1024;
 const entries = [];
 await mkdir(resolve(root, 'media-chunks'), { recursive: true });

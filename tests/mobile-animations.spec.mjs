@@ -159,23 +159,28 @@ for(const target of ['control','canvas'])test(`browser-required ${target} tap re
   await expect.poll(()=>scene.locator('video').evaluate(v=>v.currentTime)).toBeGreaterThan(initial+.2);
 });
 
-for(const [width,height] of [[320,568],[393,641],[430,932]])test(`phone ${width} × ${height} keeps the complete 4K valley in frame`,async({page})=>{
+for(const [width,height] of [[320,568],[393,641],[430,932]])test(`phone ${width} × ${height} uses the original 4K portrait composition without added sky`,async({page})=>{
   await page.setViewportSize({width,height});
   await page.goto('/');
   const video=page.locator('#home-scene video');
   await expect.poll(()=>video.evaluate(v=>v.videoHeight),{timeout:20000}).toBe(3840);
   expect(await video.evaluate(v=>v.videoWidth)).toBe(2160);
-  await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain('/media/home-phone-full.mp4');
+  await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain('/media/home-phone.mp4');
+  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-phone.webp');
+  expect(await page.locator('#home-scene .animation-frame').evaluate(n=>getComputedStyle(n).backgroundImage)).toBe('none');
   const view=await video.evaluate(v=>{
     const box=v.getBoundingClientRect();
     const scale=(getComputedStyle(v).objectFit==='contain'?Math.min:Math.max)(box.width/v.videoWidth,box.height/v.videoHeight);
     return {left:box.x+(box.width-v.videoWidth*scale)/2,right:box.x+(box.width+v.videoWidth*scale)/2,
       top:box.y+(box.height-v.videoHeight*scale)/2,bottom:box.y+(box.height+v.videoHeight*scale)/2};
   });
-  expect(view.left).toBeGreaterThanOrEqual(0);
-  expect(view.right).toBeLessThanOrEqual(width+.01);
-  expect(view.top).toBeGreaterThanOrEqual(0);
-  expect(view.bottom).toBeLessThanOrEqual(height+.01);
+  // The supplied portrait movie fills the screen with its own composition.
+  expect(view.left).toBeLessThanOrEqual(.01);
+  expect(view.right).toBeGreaterThanOrEqual(width-.01);
+  expect(view.top).toBeLessThanOrEqual(.01);
+  expect(view.bottom).toBeGreaterThanOrEqual(height-.01);
+  expect((view.left+view.right)/2).toBeCloseTo(width/2);
+  expect((view.top+view.bottom)/2).toBeCloseTo(height/2);
 });
 
 for(const [width,height] of [[390,664],[430,932]])test(`portrait phone ${width} × ${height} shows the full About illustration across the available width`,async({page})=>{
