@@ -1,0 +1,23 @@
+[
+  {
+    "id": "topnotch",
+    "title": "TopNotch",
+    "status": "coming-soon",
+    "lead": "Less clutter. More focus.",
+    "description": "TopNotch turns the space around your MacBook notch or iPhone dynamic island into a focused home for your day.",
+    "tags": [
+      "Calendar",
+      "Flexible integrations",
+      "Meeting prep"
+    ],
+    "preview": "/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png",
+    "illustration": "/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png",
+    "source": "https://dhwani.framer.ai/",
+    "previewSource": "https://framerusercontent.com/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png?width=2880&height=1800",
+    "previewSha256": "b8013ecaef4ba8df7ab47619332a85d069a1f7204b11def8475ecd73559aaf0a",
+    "previewDimensions": [
+      2880,
+      1800
+    ]
+  }
+]

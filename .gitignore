@@ -1,10 +1,14 @@
-.DS_Store
 node_modules/
+dist/
 test-results/
-screenshots/
-.env
-.env.*
-!.env.example
-CODEX_HANDOFF.md
+playwright-report/
+.DS_Store
+__pycache__/
+.reference/
 output/
-tmp/
+finalhomepage/
+finalabout/
+# These exact originals are reconstructed from media-chunks/ during the build.
+public/media/home-desktop.mp4
+public/media/home-tablet.mp4
+*.assembling

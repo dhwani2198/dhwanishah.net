@@ -1,0 +1,395 @@
+import {test,expect} from '@playwright/test';
+const projects=['tally','sprint-x','curalink','architectural-design'];
+test.beforeEach(async({page})=>{await page.emulateMedia({reducedMotion:'reduce'});});
+
+test('landing page fits the viewport and does not scroll',async({page,isMobile})=>{
+  await page.goto('/');
+  await expect(page.locator('#home-scene')).toBeVisible();
+  await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
+  await expect(page.locator('#local-time')).toContainText('My local time —');
+  if(!isMobile)await page.mouse.wheel(0,1800);
+  else await page.evaluate(()=>window.scrollTo(0,1800));
+  await page.keyboard.press('PageDown');
+  await page.keyboard.press('End');
+  expect(await page.evaluate(()=>window.scrollY)).toBe(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);
+});
+
+test('project arrow opens the list and selected names show the published previews',async({page,isMobile})=>{
+  await page.goto('/');
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect(page).toHaveURL(/#projects$/);
+  await expect(page.locator('.project-list a')).toHaveCount(5);
+  const link=page.locator('.project-list [data-project="sprint-x"]');
+  if(isMobile)await link.tap();else await link.hover();
+  await expect(page.locator('.preview-panel')).toBeVisible();
+  await expect(page.locator('.preview-panel .preview-original')).toHaveAttribute('src','/assets/images/2Jvkn49eF0WOnLiSONCsAKZSSRQ.jpg');
+  await expect(page.locator('.preview-panel h2')).toHaveText('Sprint X');
+  if(!isMobile)await expect(page.locator('.preview-connector path')).toHaveAttribute('d',/ C /);
+  else await expect(page.locator('#project-viewer')).not.toBeVisible();
+  await expect(page.getByRole('link',{name:'Open Sprint X project'})).toHaveAttribute('href','/sprint-x');
+  await page.locator('.preview-description').click();
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  await expect(page.locator('#case-title')).toHaveText('Sprint X');
+});
+
+test('viewer switches projects, scrolls internally, expands, closes, and returns home',async({page})=>{
+  await page.goto('/tally');
+  const viewer=page.locator('#project-viewer');
+  await expect(viewer).toBeVisible();
+  await viewer.getByRole('link',{name:'CuraLink',exact:true}).click();
+  await expect(page).toHaveURL(/\/curalink$/);
+  await expect(page.locator('#case-title')).toHaveText('CuraLink');
+  await expect(page.frameLocator('.published-case').locator('body')).toContainText('As the solo designer for CuraLink');
+  await page.locator('.published-case').evaluate(node=>node.contentWindow.scrollTo(0,800));
+  expect(await page.locator('.published-case').evaluate(node=>node.contentWindow.scrollY)).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.scrollY)).toBe(0);
+  const initial=await viewer.boundingBox();
+  await page.getByRole('button',{name:'Expand project viewer'}).click();
+  const expanded=await viewer.boundingBox();
+  expect(expanded.height).toBeGreaterThan(initial.height);
+  await expect(page.getByRole('button',{name:'Restore project viewer size'})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'Close project viewer'}).click();
+  await expect(viewer).not.toBeVisible();
+  await expect(page).toHaveURL(/#projects$/);
+  await page.getByRole('link',{name:'Return to the homepage'}).click();
+  await expect(page.locator('#home-scene')).toBeVisible();
+});
+
+test('direct project URLs and browser history preserve viewer state',async({page})=>{
+  await page.goto('/#projects');
+  const open=async id=>{
+    await page.locator(`.project-list [data-project="${id}"]`).focus();
+    await page.locator('.preview-open').click();
+  };
+  await open('tally');
+  await page.locator('.project-tabs [data-project="sprint-x"]').click();
+  await page.goBack();
+  await expect(page.locator('#case-title')).toHaveText('Tally');
+  await page.goBack();
+  await expect(page.locator('#project-viewer')).not.toBeVisible();
+  await page.goForward();
+  await expect(page.locator('#case-title')).toHaveText('Tally');
+  await page.reload();
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  for(const id of projects){
+    await page.goto('/'+id);
+    await expect(page.locator(`[data-article="${id}"]`)).toBeVisible();
+  }
+});
+
+test('keyboard previews, modal focus, and Escape work',async({page})=>{
+  await page.goto('/#projects');
+  const project=page.locator('.project-list [data-project="tally"]');
+  await project.focus();
+  await expect(page.locator('.preview-panel')).toBeVisible();
+  // The full preview card also supports keyboard users on touch devices.
+  await page.locator('.preview-panel').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  for(let i=0;i<8;i++){
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(()=>document.querySelector('dialog').contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#project-viewer')).not.toBeVisible();
+  await expect(project).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#project-viewer')).toBeVisible();
+});
+
+test('About keeps the published biography, artwork, credentials, and contact links',async({page})=>{
+  await page.goto('/about');
+  await expect(page.locator('#about-scene')).toBeVisible();
+  await page.locator('.about-read').click();
+  await expect(page.locator('.about-content')).toContainText('I started out as an architect');
+  await expect(page.locator('.about-content')).toContainText('Google UX Design Professional');
+  await expect(page.locator('.art-grid img')).toHaveCount(2);
+  await expect(page.locator('.art-grid a')).toHaveCount(0);
+  await expect(page.locator('.art-grid img').last()).toHaveAttribute('src','/assets/images/qCHg2J51RnCOVjeW4OKlRllH0.png');
+  expect(await page.locator('.art-grid img').last().evaluate(n=>getComputedStyle(n).backgroundColor)).toBe('rgb(0, 0, 0)');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await expect(page.locator('.contact-links a').first()).toHaveAttribute('href','mailto:dhwani0321@gmail.com');
+  await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Projects',exact:true}).click();
+  await expect(page).toHaveURL(/#projects$/);
+  await expect(page.locator('#projects-scene')).toBeVisible();
+  expect(await page.evaluate(()=>window.scrollY)).toBe(0);
+});
+
+test('published Blog and Resume links open separately',async({page})=>{
+  await page.goto('/');
+  const nav=page.getByRole('navigation',{name:'Main navigation'});
+  await expect(nav.getByRole('link',{name:/Blog/})).toHaveAttribute('href','https://dhwani0321.substack.com/');
+  await expect(nav.getByRole('link',{name:/Resume/})).toHaveAttribute('href','https://flowcv.com/resume/la3q6sc74157');
+  await expect(nav.getByRole('link',{name:/Blog/})).toHaveAttribute('target','_blank');
+  await expect(nav.getByRole('link',{name:/Resume/})).toHaveAttribute('target','_blank');
+});
+
+test('San Francisco clock handles both PST and PDT',async({page})=>{
+  await page.goto('/');
+  const times=await page.evaluate(async()=>{
+    const {formatLocalTime}=await import('/src/app.js');
+    return [formatLocalTime(new Date('2026-01-15T20:10:41Z')),formatLocalTime(new Date('2026-07-15T23:10:41Z'))];
+  });
+  expect(times).toEqual(['My local time — 12:10:41 PM PST','My local time — 4:10:41 PM PDT']);
+});
+
+test('reduced motion uses native-resolution posters without requesting video',async({page})=>{
+  const videos=[];page.on('request',request=>{if(request.url().endsWith('.mp4'))videos.push(request.url());});
+  await page.goto('/');
+  await expect(page.locator('#home-scene .scene-poster')).toBeVisible();
+  await expect(page.locator('#home-scene video')).not.toHaveAttribute('src');
+  await page.getByRole('link',{name:'About',exact:true}).click();
+  await expect(page.locator('#about-scene .scene-poster')).toBeVisible();
+  expect(videos).toEqual([]);
+});
+
+test('supplied 4K video plays and pauses when Projects opens',async({page,isMobile})=>{
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.goto('/');
+  await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>Math.max(video.videoWidth,video.videoHeight)),{timeout:20000}).toBe(3840);
+  await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>video.paused)).toBe(false);
+  await expect(page.locator('#home-scene video')).toHaveAttribute('src',`/media/home-${isMobile?'phone':'desktop'}.mp4`);
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>video.paused)).toBe(true);
+});
+
+test('video failure leaves a poster and usable navigation',async({page})=>{
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.route('**/media/*.mp4',route=>route.abort());
+  await page.goto('/');
+  await expect(page.locator('#home-scene .scene-poster')).toBeVisible();
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect(page.locator('#projects-scene')).toBeVisible();
+});
+
+test('tablet and landscape use the supplied compositions without overflowing the homepage',async({page})=>{
+  await page.setViewportSize({width:1024,height:768});
+  await page.goto('/');
+  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-tablet.webp');
+  await page.setViewportSize({width:844,height:390});
+  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-desktop.webp');
+  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);
+});
+
+test('About plays its original 4K animation and pauses when the biography is visible',async({page})=>{
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.goto('/about');
+  await expect.poll(()=>page.locator('#about-scene video').evaluate(video=>Math.max(video.videoWidth,video.videoHeight)),{timeout:20000}).toBe(3840);
+  await expect.poll(()=>page.locator('#about-scene video').evaluate(video=>video.paused)).toBe(false);
+  await page.locator('.about-read').click();
+  await expect.poll(()=>page.locator('#about-scene video').evaluate(video=>video.paused)).toBe(true);
+});
+
+test('local pages render without missing assets or script errors',async({page})=>{
+  const errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('response',response=>{if(response.url().includes('127.0.0.1:4187')&&response.status()>=400)errors.push(`${response.status()} ${response.url()}`);});
+  for(const route of ['/','/about','/topnotch',...projects.map(id=>'/'+id)]){
+    await page.goto(route);
+    await expect(page.locator('main')).toBeVisible();
+    await expect(page.locator('.scene:visible,.about-scene:visible')).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});
+
+test('landing fills the viewport and View projects has a pill',async({page})=>{
+  await page.goto('/');
+  const styles=await page.locator('#home-scene .scene-poster').evaluate(node=>({fit:getComputedStyle(node).objectFit,rect:node.getBoundingClientRect().toJSON()}));
+  expect(styles.fit).toBe('cover');
+  const scene=await page.locator('#home-scene').boundingBox();
+  expect(styles.rect.width).toBe(scene.width);
+  expect(styles.rect.height).toBe(scene.height);
+  const pill=await page.locator('.project-trigger').evaluate(node=>({radius:getComputedStyle(node).borderRadius,background:getComputedStyle(node).backgroundColor}));
+  expect(pill.radius).toBe('28px');
+  expect(pill.background).not.toBe('rgba(0, 0, 0, 0)');
+});
+
+test('About biography opens only on click, uses black and uniform paragraph sizes, and returns to animation',async({page})=>{
+  await page.goto('/about');
+  await expect(page.locator('#about-story')).toBeHidden();
+  await page.evaluate(()=>scrollTo(0,1400));
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
+  const frame=await page.locator('.about-hero .animation-frame').boundingBox();
+  const nav=await page.locator('.site-nav').boundingBox();
+  expect(frame.y).toBeGreaterThan(nav.y+nav.height);
+  await page.locator('.about-read').click();
+  await expect(page).toHaveURL(/\/about#about-story$/);
+  await expect(page.locator('.about-hero')).toBeHidden();
+  const styles=await page.locator('.about-chapter').first().locator('p').evaluateAll(nodes=>nodes.map(n=>({size:getComputedStyle(n).fontSize,line:getComputedStyle(n).lineHeight})));
+  expect(styles[0]).toEqual(styles[1]);
+  expect(await page.locator('#about-story').evaluate(n=>getComputedStyle(n).backgroundColor)).toBe('rgb(0, 0, 0)');
+  await page.evaluate(()=>scrollTo(0,1000));
+  expect(await page.evaluate(()=>scrollY)).toBeGreaterThan(0);
+  await expect(page.locator('.about-back')).toHaveText('Back');
+  await page.locator('.about-back').click();
+  await expect(page.locator('.about-hero')).toBeVisible();
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
+  await page.goBack();
+  await expect(page.locator('#about-story')).toBeVisible();
+});
+
+test('static project cover opens its case study and connector clears the arrow',async({page,isMobile})=>{
+  await page.goto('/#projects');
+  const link=page.locator('.project-list [data-project="tally"]');
+  if(isMobile)await link.tap();else await link.hover();
+  await expect(page.locator('.preview-original')).toHaveAttribute('src','/assets/images/krraSyH08fFeIOG9BdqEzE7QuWs.jpg');
+  if(!isMobile){
+    const gap=await page.evaluate(()=> {
+      const box=document.querySelector('.project-stage').getBoundingClientRect();
+      const link=document.querySelector('.project-link.is-selected').getBoundingClientRect();
+      const start=document.querySelector('.preview-connector path').getAttribute('d').match(/^M ([\d.]+)/)[1];
+      return Number(start)+box.left-link.right;
+    });
+    expect(gap).toBeGreaterThanOrEqual(19);
+  }
+  await page.locator('.preview-original').click();
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  await page.getByRole('button',{name:'Close project viewer'}).click();
+  await expect(page.locator('.preview-original')).toBeVisible();
+});
+
+test('Say hello resolves from ASCII and uses a proportionate SVG arrow',async({page})=>{
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.goto('/about#about-story');
+  await page.locator('.connect').scrollIntoViewIfNeeded();
+  await expect.poll(()=>page.locator('.hello-text').textContent()).not.toBe('Say hello');
+  await expect(page.locator('.hello-text')).toHaveText('Say hello',{timeout:4000});
+  await expect(page.locator('.hello-arrow')).toBeVisible();
+  await expect(page.getByRole('link',{name:'Say hello by email'})).toHaveAttribute('href','mailto:dhwani0321@gmail.com');
+});
+
+test('case studies preserve published structure, Tally embeds its demo, and Sprint videos retain posters',async({page})=>{
+  await page.route('https://tallyautomate.lovable.app/**',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Tally interactive demo</p>'}));
+  await page.goto('/tally');
+  const tally=page.frameLocator('.published-case');
+  await expect(tally.locator('[data-framer-name="Intro/Overview"]')).toHaveCount(4);
+  await expect(tally.locator('iframe:visible')).toHaveAttribute('src','https://tallyautomate.lovable.app');
+  await expect(tally.locator('iframe:visible')).toHaveAttribute('title','Tally interactive bookkeeping demo');
+  const label=tally.locator('.case-section-label').filter({hasText:'OVERVIEW'}).first();
+  const labelStyles=await label.evaluate(n=>({family:getComputedStyle(n).fontFamily,size:getComputedStyle(n).fontSize,spacing:getComputedStyle(n).letterSpacing,weight:getComputedStyle(n).fontWeight}));
+  expect(labelStyles.family).toContain('Menlo');
+  expect(labelStyles.weight).toBe('400');
+  expect(Number.parseFloat(labelStyles.size)).toBeLessThanOrEqual(10);
+  expect(Number.parseFloat(labelStyles.spacing)).toBeGreaterThan(1);
+  await page.locator('.published-case').evaluate(n=>n.contentWindow.scrollTo(0,400));
+  await page.getByRole('button',{name:'Close project viewer'}).click();
+  await page.locator('.project-list [data-project="tally"]').focus();
+  await page.locator('.preview-open').click();
+  await expect(page.locator('.published-case')).toBeVisible();
+  await page.locator('.project-tabs [data-project="sprint-x"]').click();
+  const sprint=page.frameLocator('.published-case');
+  await expect(sprint.locator('video[poster]')).not.toHaveCount(0);
+  await expect(sprint.locator('.native-carousel')).toHaveCount(1);
+  await sprint.locator('.native-carousel').scrollIntoViewIfNeeded();
+  await sprint.getByRole('button',{name:'Next',exact:true}).click();
+  await expect.poll(()=>sprint.locator('.native-carousel').evaluate(n=>n.scrollLeft)).toBeGreaterThan(0);
+  await page.locator('.project-tabs [data-project="curalink"]').click();
+  const cura=page.frameLocator('.published-case');
+  await expect(cura.locator('[data-framer-name="Role/tools"]')).toContainText('solo designer');
+});
+
+const coverSources={tally:'krraSyH08fFeIOG9BdqEzE7QuWs.jpg','sprint-x':'2Jvkn49eF0WOnLiSONCsAKZSSRQ.jpg',curalink:'curalink-frame-1410125354.png','architectural-design':'U8yVw1u3PrsBCjqWiDGsj6Lzrc8.png'};
+const coverDimensions={tally:[4032,3024],'sprint-x':[7395,5550],curalink:[2048,1544],'architectural-design':[2698,1888]};
+for(const id of projects)test(`${id} uses its selected full-resolution static cover`,async({page})=> {
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  const previewMovies=[];
+  page.on('request',request=>{if(/\/previews\/.*\.mp4/.test(request.url()))previewMovies.push(request.url());});
+  await page.goto('/#projects');
+  await page.locator(`.project-list [data-project="${id}"]`).focus();
+  const image=page.locator('.preview-original');
+  await expect(image).toHaveAttribute('src',`/assets/images/${coverSources[id]}`);
+  await image.evaluate(n=>n.decode());
+  expect(await image.evaluate(n=>[n.naturalWidth,n.naturalHeight])).toEqual(coverDimensions[id]);
+  await expect(page.locator('.preview-panel video')).toHaveCount(0);
+  expect(previewMovies).toEqual([]);
+});
+
+const sparkPixels=page=>page.locator('.home-sparks').evaluate(canvas=> {
+  const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+  let painted=0;
+  for(let i=3;i<pixels.length;i+=4)if(pixels[i]>0)painted++;
+  return painted;
+});
+
+test('homepage cursor sparks fade, pause, and leave navigation clickable',async({page,isMobile})=> {
+  test.skip(isMobile,'Sparks apply to a mouse pointer; touch navigation is covered separately.');
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.goto('/');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  await page.mouse.move(720,390);
+  await expect.poll(()=>sparkPixels(page)).toBeGreaterThan(0);
+  // Hovering an interactive pill stops emission and lets existing sparks fade.
+  await page.locator('.project-trigger').hover();
+  await expect.poll(()=>sparkPixels(page)).toBe(0);
+  await page.mouse.move(800,390);
+  await expect.poll(()=>sparkPixels(page)).toBeGreaterThan(0);
+  await page.locator('[data-animation="home"] .animation-toggle').click();
+  await expect.poll(()=>sparkPixels(page)).toBe(0);
+  await page.locator('[data-animation="home"] .animation-toggle').click();
+  await page.mouse.move(730,390);
+  await expect.poll(()=>sparkPixels(page)).toBeGreaterThan(0);
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect(page).toHaveURL(/#projects$/);
+  await expect.poll(()=>sparkPixels(page)).toBe(0);
+  await page.getByRole('link',{name:'Return to the homepage'}).click();
+  await page.mouse.move(740,390);
+  await expect.poll(()=>sparkPixels(page)).toBeGreaterThan(0);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect.poll(()=>sparkPixels(page)).toBe(0);
+});
+
+test('reduced motion and touch do not trigger the cursor overlay',async({page,isMobile})=> {
+  await page.goto('/');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  if(isMobile) {
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    await page.touchscreen.tap(160,350);
+  } else await page.mouse.move(720,390);
+  expect(await sparkPixels(page)).toBe(0);
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect(page.locator('#projects-scene')).toBeVisible();
+});
+
+
+test('TopNotch is coming soon with its published preview, working card, and project switching',async({page,isMobile})=>{
+  await page.goto('/#projects');
+  const link=page.locator('.project-list [data-project="topnotch"]');
+  await expect(page.locator('.project-count')).toHaveText('01 — 05');
+  await expect(link.locator('.project-status')).toHaveText('Coming soon');
+  if(isMobile)await link.tap();else await link.hover();
+  await expect(page.locator('.preview-status')).toBeVisible();
+  await expect(page.locator('.preview-heading h2')).toHaveText('TopNotch');
+  await expect(page.locator('.preview-open-label')).toHaveText('View preview');
+  const image=page.locator('.preview-original');
+  await expect(image).toHaveAttribute('src','/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png');
+  await image.evaluate(n=>n.decode());
+  expect(await image.evaluate(n=>[n.naturalWidth,n.naturalHeight])).toEqual([2880,1800]);
+  expect(await image.evaluate(n=>getComputedStyle(n).objectPosition.split(' ').map(value=>Math.round(parseFloat(value)*10)/10))).toEqual([65.4,65.7]);
+  const coverBounds=await image.boundingBox();
+  expect(Math.abs(coverBounds.width-coverBounds.height)).toBeLessThan(1);
+  await image.click();
+  await expect(page).toHaveURL(/\/topnotch$/);
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  await expect(page.locator('#case-title')).toHaveText('TopNotch');
+  await expect(page.locator('.project-teaser .project-status')).toHaveText('Coming soon');
+  await expect(page.locator('.project-teaser')).toContainText('Less clutter. More focus.');
+  const teaserImage=page.locator('.teaser-media img');
+  expect(await teaserImage.evaluate(n=>getComputedStyle(n).objectPosition.split(' ').map(value=>Math.round(parseFloat(value)*10)/10))).toEqual([65.4,65.7]);
+  const teaserBounds=await teaserImage.boundingBox();
+  expect(Math.abs(teaserBounds.width-teaserBounds.height)).toBeLessThan(1);
+  await expect(page.getByRole('link',{name:'View published preview'})).toHaveAttribute('href','https://dhwani.framer.ai/');
+  await expect(page.getByRole('link',{name:'View published preview'})).toHaveAttribute('target','_blank');
+  await page.locator('.project-tabs [data-project="tally"]').click();
+  await expect(page.locator('.published-case')).toBeVisible();
+  await page.locator('.project-tabs [data-project="topnotch"]').click();
+  await expect(page.locator('.project-teaser')).toBeVisible();
+  await page.getByRole('button',{name:'Close project viewer'}).click();
+  await expect(page).toHaveURL(/#projects$/);
+  await expect(page.locator('.preview-status')).toBeVisible();
+  await page.goto('/topnotch');
+  await page.reload();
+  await expect(page.locator('#case-title')).toHaveText('TopNotch');
+  await expect(page.locator('.project-teaser')).toBeVisible();
+});

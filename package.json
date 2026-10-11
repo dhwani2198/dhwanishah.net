@@ -1,16 +1,18 @@
 {
-  "name": "dhwani-website",
+  "name": "dhwani-ascii-portfolio",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "mirror": "node scripts/mirror.mjs",
-    "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "prepare:media": "python3 scripts/prepare-media.py",
+    "restore:media": "node scripts/restore-media.mjs",
+    "pack:media": "node scripts/split-media.mjs",
+    "capture": "node scripts/capture.mjs"
   },
-  "devDependencies": {
-    "@playwright/test": "^1.62.0"
-  }
+  "devDependencies": { "@playwright/test": "^1.62.0" }
 }

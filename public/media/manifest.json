@@ -1,0 +1,56 @@
+[
+  {
+    "name": "home-desktop",
+    "source": "finalhomepage/valley-living-ascii-36s-4k-desktop.mp4",
+    "bytes": 126679377,
+    "width": 3840,
+    "height": 2160,
+    "sha256": "82eb590aaec01675be7c44c309f5a7656ba4963817a7cde136297a080b81f941",
+    "byteIdentical": true
+  },
+  {
+    "name": "home-tablet",
+    "source": "finalhomepage/valley-living-ascii-36s-4k-tablet.mp4",
+    "bytes": 144150751,
+    "width": 3840,
+    "height": 2880,
+    "sha256": "233e90c2c4e650fde26998e1e4551bf2d8165460608950f932dca0d36184ecef",
+    "byteIdentical": true
+  },
+  {
+    "name": "home-phone",
+    "source": "finalhomepage/valley-living-ascii-36s-4k-phone.mp4",
+    "bytes": 101758917,
+    "width": 2160,
+    "height": 3840,
+    "sha256": "86b758433e1e2ccd47e122f13fe53bde10b4022eba29977d5ef22742cbc2e211",
+    "byteIdentical": true
+  },
+  {
+    "name": "about-desktop",
+    "source": "finalabout/about-living-ascii-4k-v2-desktop.mp4",
+    "bytes": 98669646,
+    "width": 3840,
+    "height": 2160,
+    "sha256": "731741d3b2a0bb9b55c0049744350abad43323c3ab9d5947503152af7065ff95",
+    "byteIdentical": true
+  },
+  {
+    "name": "about-tablet",
+    "source": "finalabout/about-living-ascii-4k-v2-original.mp4",
+    "bytes": 98493616,
+    "width": 3840,
+    "height": 2880,
+    "sha256": "47bc08ff4faec1c71172f5cce053bae30e59735cbc818e31078fa5b940876817",
+    "byteIdentical": true
+  },
+  {
+    "name": "about-phone",
+    "source": "finalabout/about-living-ascii-4k-v2-phone.mp4",
+    "bytes": 38959619,
+    "width": 2160,
+    "height": 3840,
+    "sha256": "99ebdd2f09a340e727bd5436755a42bc5f55d3ed86bd824e2f526b739f0dbb88",
+    "byteIdentical": true
+  }
+]

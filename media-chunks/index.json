@@ -1,0 +1,42 @@
+[
+  {
+    "name": "home-desktop",
+    "parts": [
+      {
+        "file": "home-desktop.part-001",
+        "bytes": 50331648,
+        "sha256": "a4f83c98847bf28280bae00ec62838023a673f2b65639aa8966bf1384fd7d9fa"
+      },
+      {
+        "file": "home-desktop.part-002",
+        "bytes": 50331648,
+        "sha256": "9d5d5f86b21f8fa9c35c91dbd994b0fe5f09a17a4869be53107c91ebbbeed861"
+      },
+      {
+        "file": "home-desktop.part-003",
+        "bytes": 26016081,
+        "sha256": "f50057ff40e85d6f64bfaf593948f0c03bd8e88ff7b64a7a15977146d72c7af6"
+      }
+    ]
+  },
+  {
+    "name": "home-tablet",
+    "parts": [
+      {
+        "file": "home-tablet.part-001",
+        "bytes": 50331648,
+        "sha256": "de247b9571dfc6715dc63e00f1b69978cb89e5c011fb86c5ea29f037ef52766b"
+      },
+      {
+        "file": "home-tablet.part-002",
+        "bytes": 50331648,
+        "sha256": "e8173ac0c5470a5889ad2d83c7d6f90956add48cd02974c986764eb83ac8009b"
+      },
+      {
+        "file": "home-tablet.part-003",
+        "bytes": 43487455,
+        "sha256": "3632e2348e0b53bf9a1232cd73e0f8eb317c3aa22bd40b663345a630e55b393e"
+      }
+    ]
+  }
+]

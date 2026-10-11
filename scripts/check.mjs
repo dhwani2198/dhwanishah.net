@@ -1,33 +1,59 @@
-import { readFile } from "node:fs/promises"
-import { fileURLToPath } from "node:url"
+import assert from 'node:assert/strict';
+import { readFile, stat } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { restoreOriginalMedia } from './restore-media.mjs';
 
-const siteRoot = fileURLToPath(new URL("../", import.meta.url))
-const routes = ["/", "/about", "/tally", "/sprint-x", "/curalink", "/architectural-design"]
-const manifest = JSON.parse(await readFile(`${siteRoot}/mirror-manifest.json`, "utf8"))
-
-for (const route of routes) {
-  const file = route === "/" ? `${siteRoot}/index.html` : `${siteRoot}${route}/index.html`
-  const html = await readFile(file, "utf8")
-  if (!html.includes("Dhwani Shah")) throw new Error(`${route}: missing page title/content`)
-  if (html.includes("https://framerusercontent.com")) throw new Error(`${route}: contains a remote Framer asset`)
-  if (html.includes("https://fonts.gstatic.com")) throw new Error(`${route}: contains a remote Google font`)
+const root=resolve(import.meta.dirname,'..');
+await restoreOriginalMedia(root);
+const data=JSON.parse(await readFile(resolve(root,'content/published.json'),'utf8'));
+const provenance=JSON.parse(await readFile(resolve(root,'content/asset-provenance.json'),'utf8'));
+assert.equal(data.publication,'b2371357950dc8c4b26cf29f14ae2f46aad85765');
+const additions=JSON.parse(await readFile(resolve(root,'content/additional-projects.json'),'utf8'));
+const previewOverrides=JSON.parse(await readFile(resolve(root,'content/preview-overrides.json'),'utf8'));
+assert.deepEqual(data.projects.filter(p=>p.status==='coming-soon'),additions);
+assert.deepEqual(data.projects.filter(p=>p.status!=='coming-soon').map(p=>p.id),['tally','sprint-x','curalink','architectural-design']);
+assert.equal(new Set(data.projects.map(p=>p.id)).size,data.projects.length);
+for(const entry of Object.values(provenance)) {
+  const raw=await readFile(resolve(root,'public',entry.output.slice(1)));
+  const hash=createHash('sha1').update(`blob ${raw.length}\0`).update(raw).digest('hex');
+  assert.equal(hash,entry.publishedSha,`Published asset changed: ${entry.source}`);
 }
-
-const aboutHtml = await readFile(`${siteRoot}/about/index.html`, "utf8")
-if (!aboutHtml.includes('src="/assets/assets/paper-plane-low-poly-3d-v7-hq.mp4"')) {
-  throw new Error("/about: initial HTML does not use the current paper-plane animation")
+const videos=JSON.parse(await readFile(resolve(root,'public/media/manifest.json'),'utf8'));
+assert.equal(videos.length,6);
+for(const video of videos) {
+  const copy=await readFile(resolve(root,'public/media',video.name+'.mp4'));
+  const digest=createHash('sha256').update(copy).digest('hex');
+  assert.equal(digest,video.sha256,`${video.name} must retain the supplied original bytes`);
+  assert.equal(copy.length,video.bytes);
+  if(existsSync(resolve(root,video.source))) {
+    const original=await readFile(resolve(root,video.source));
+    assert.equal(digest,createHash('sha256').update(original).digest('hex'),`${video.name} must remain byte-identical to the supplied 4K original`);
+  }
+  assert.ok(Math.max(video.width,video.height)>=3840);
 }
-if (aboutHtml.includes('src="/assets/assets/1OjbNDuyowRWI9iGPvfQ40L1qJY.mp4"')) {
-  throw new Error("/about: initial HTML still loads the legacy paper-plane animation")
+for(const p of data.projects) {
+  assert.ok((await stat(resolve(root,'public',p.preview.slice(1)))).size>0);
+  if(previewOverrides[p.id]) {
+    for(const [key,value] of Object.entries(previewOverrides[p.id]))assert.deepEqual(p[key],value);
+    const image=await readFile(resolve(root,'public',p.preview.slice(1)));
+    assert.equal(createHash('sha256').update(image).digest('hex'),p.previewSha256,'Keep the supplied preview bytes unchanged');
+    assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20)],p.previewDimensions);
+  }
+  if(p.status==='coming-soon') {
+    const image=await readFile(resolve(root,'public',p.preview.slice(1)));
+    assert.equal(createHash('sha256').update(image).digest('hex'),p.previewSha256,'The new project preview must retain the original source bytes');
+    assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20)],p.previewDimensions);
+    assert.equal(p.source,'https://dhwani.framer.ai/');
+  } else {
+    assert.ok(p.blocks.length);
+    assert.ok((await stat(resolve(root,'public',p.caseStudy.slice(1)))).size>0);
+  }
+  assert.ok((await stat(resolve(root,'public',p.illustration.slice(1)))).size>0);
+  assert.equal(p.preview,p.illustration,'Use the selected static project cover');
+  assert.ok(!p.previewVideo,'Project previews must be static');
 }
-
-const aboutBundle = await readFile(`${siteRoot}/assets/sites/1O6HJjFgTJMJ8aISDQc9XC/about-centered-portrait.20261009.mjs`, "utf8")
-if (!aboutBundle.includes("/assets/assets/paper-plane-low-poly-3d-v7-hq.mp4")) {
-  throw new Error("/about: client-navigation bundle does not use the current paper-plane animation")
-}
-if (aboutBundle.includes("/assets/assets/1OjbNDuyowRWI9iGPvfQ40L1qJY.mp4")) {
-  throw new Error("/about: client-navigation bundle still loads the legacy paper-plane animation")
-}
-
-if (manifest.failures.length) throw new Error(`${manifest.failures.length} asset downloads failed`)
-console.log(`Validated ${routes.length} routes and ${manifest.assetCount} localized assets.`)
+for(const file of ['src/app.js','src/ascii.js','src/sparks.js','src/case-study.js','src/render.mjs','scripts/serve.mjs','scripts/build.mjs','scripts/prepare-topnotch.mjs','scripts/restore-media.mjs','scripts/split-media.mjs'])execFileSync(process.execPath,['--check',resolve(root,file)]);
+console.log(`Verified ${Object.keys(provenance).length} published assets, 6 original 4K videos, content, previews, and JavaScript.`);
