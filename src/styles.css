@@ -28,6 +28,7 @@ main:focus{outline:none}
 .scene.home-scene{background:#05050b;min-height:0}
 .animation-frame{position:absolute;inset:0;overflow:hidden}
 .scene-video,.scene-poster{position:absolute;width:100%;height:100%;inset:0;object-fit:cover}
+.home-scene .scene-video,.home-scene .scene-poster{object-fit:fill}
 .scene-video{opacity:1}
 .scene-poster{opacity:1;transition:opacity .65s ease}
 .is-playing .scene-video{opacity:1}
@@ -183,7 +184,6 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
 /* Preserve the entire supplied phone homepage composition at every screen ratio. */
 @media(max-width:759px) and (orientation:portrait){
  .scene.home-scene{background:#0b0711}
- .home-scene .scene-video,.home-scene .scene-poster{object-fit:contain;object-position:50% 50%}
  /* Explicit geometry keeps the video and poster aligned on mobile Safari. */
  .about-hero .scene-video,.about-hero .scene-poster{width:100%;height:calc(100vw * 16 / 9);aspect-ratio:auto;inset:auto;left:var(--artwork-shift-x,0px);top:calc(50% - 100vw * 8 / 9);transform:none;object-fit:contain;object-position:50% 50%}
 }

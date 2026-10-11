@@ -236,7 +236,7 @@ test('local pages render without missing assets or script errors',async({page})=
 test('landing fills the viewport and View projects has a pill',async({page,isMobile})=>{
   await page.goto('/');
   const styles=await page.locator('#home-scene .scene-poster').evaluate(node=>({fit:getComputedStyle(node).objectFit,rect:node.getBoundingClientRect().toJSON()}));
-  expect(styles.fit).toBe(isMobile?'contain':'cover');
+  expect(styles.fit).toBe('fill');
   const scene=await page.locator('#home-scene').boundingBox();
   expect(styles.rect.width).toBe(scene.width);
   expect(styles.rect.height).toBe(scene.height);

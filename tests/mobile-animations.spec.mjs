@@ -159,28 +159,38 @@ for(const target of ['control','canvas'])test(`browser-required ${target} tap re
   await expect.poll(()=>scene.locator('video').evaluate(v=>v.currentTime)).toBeGreaterThan(initial+.2);
 });
 
-for(const [width,height] of [[320,568],[393,641],[430,932]])test(`phone ${width} × ${height} shows every edge of the original 4K portrait composition`,async({page})=>{
+for(const [width,height,variant,sourceWidth,sourceHeight] of [
+  [320,568,'phone',2160,3840],[393,641,'phone',2160,3840],[430,932,'phone',2160,3840],
+  [768,1024,'tablet',3840,2880],[1024,768,'tablet',3840,2880],
+  [1440,900,'desktop',3840,2160],[844,390,'desktop',3840,2160],
+])test(`homepage ${width} × ${height} fills every screen edge with the original 4K animation`,async({page})=>{
   await page.setViewportSize({width,height});
   await page.goto('/');
   const video=page.locator('#home-scene video');
-  await expect.poll(()=>video.evaluate(v=>v.videoHeight),{timeout:20000}).toBe(3840);
-  expect(await video.evaluate(v=>v.videoWidth)).toBe(2160);
-  await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain('/media/home-phone.mp4');
-  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-phone.webp');
+  await expect.poll(()=>video.evaluate(v=>[v.videoWidth,v.videoHeight]),{timeout:20000}).toEqual([sourceWidth,sourceHeight]);
+  await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1)).toBe(true);
+  await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain(`/media/home-${variant}.mp4`);
+  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src',`/media/home-${variant}.webp`);
   expect(await page.locator('#home-scene .animation-frame').evaluate(n=>getComputedStyle(n).backgroundImage)).toBe('none');
-  const view=await video.evaluate(v=>{
+  await page.locator('#home-scene .scene-poster').evaluate(n=>n.decode());
+  for(const media of [video,page.locator('#home-scene .scene-poster')]){
+  const view=await media.evaluate(v=>{
     const box=v.getBoundingClientRect();
-    const scale=(getComputedStyle(v).objectFit==='contain'?Math.min:Math.max)(box.width/v.videoWidth,box.height/v.videoHeight);
-    return {left:box.x+(box.width-v.videoWidth*scale)/2,right:box.x+(box.width+v.videoWidth*scale)/2,
-      top:box.y+(box.height-v.videoHeight*scale)/2,bottom:box.y+(box.height+v.videoHeight*scale)/2};
+    const width=v.videoWidth||v.naturalWidth,height=v.videoHeight||v.naturalHeight;
+    const fit=getComputedStyle(v).objectFit;
+    const scale=(fit==='contain'?Math.min:Math.max)(box.width/width,box.height/height);
+    const paintedWidth=fit==='fill'?box.width:width*scale,paintedHeight=fit==='fill'?box.height:height*scale;
+    return {left:box.x+(box.width-paintedWidth)/2,right:box.x+(box.width+paintedWidth)/2,
+      top:box.y+(box.height-paintedHeight)/2,bottom:box.y+(box.height+paintedHeight)/2};
   });
-  // Every pixel of the original movie stays visible, including on taller phones.
-  expect(view.left).toBeGreaterThanOrEqual(-.01);
-  expect(view.right).toBeLessThanOrEqual(width+.01);
-  expect(view.top).toBeGreaterThanOrEqual(-.01);
-  expect(view.bottom).toBeLessThanOrEqual(height+.01);
+  // The original canvas reaches all four screen edges, with no trimming or gaps.
+  expect(view.left).toBeCloseTo(0,1);
+  expect(view.right).toBeCloseTo(width,1);
+  expect(view.top).toBeCloseTo(0,1);
+  expect(view.bottom).toBeCloseTo(height,1);
   expect((view.left+view.right)/2).toBeCloseTo(width/2);
   expect((view.top+view.bottom)/2).toBeCloseTo(height/2);
+  }
 });
 
 for(const [width,height] of [[320,568],[393,641],[390,664],[430,932]])test(`portrait phone ${width} × ${height} centers the full About illustration in the poster and playing video`,async({page})=>{
