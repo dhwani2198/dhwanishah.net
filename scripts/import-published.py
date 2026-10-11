@@ -172,7 +172,8 @@ def generate():
         project.update(overrides.get(project['id'], {}))
     about = about_data()
     font = asset('/assets/assets/GrgcKwrN6d3Uz8EwcLHZxwEfC4.woff2')
-    output = dict(publication='b2371357950dc8c4b26cf29f14ae2f46aad85765', font=font, projects=projects, about=about)
+    favicon = asset('/assets/images/jILjRIcnmMGIMmqO3mzMDBdYKZM.png')
+    output = dict(publication='b2371357950dc8c4b26cf29f14ae2f46aad85765', font=font, favicon=favicon, projects=projects, about=about)
     (ROOT / 'content/published.json').write_text(json.dumps(output, ensure_ascii=False, indent=2) + '\n')
     (ROOT / 'content/asset-provenance.json').write_text(json.dumps(asset_manifest, indent=2) + '\n')
     for p in projects:

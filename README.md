@@ -2,6 +2,8 @@
 
 A standalone static portfolio built from the final published website. The content baseline is GitHub Pages publication `b2371357950dc8c4b26cf29f14ae2f46aad85765`. The original website folder is read-only.
 
+Every page retains the original illustrated portrait favicon and Apple touch icon from that publication, using the exact original PNG bytes.
+
 The homepage is one screen. Projects opens a list with static cover images and a case-study viewer. Clicking anywhere on a preview card opens its project. TopNotch appears first as Coming soon, with the original preview image and copy from https://dhwani.framer.ai/; both its card and viewer match Framer’s square cover crop and 65.4% / 65.7% focal position. Its viewer contains a short preview and a link to the source publication. About opens with one animation screen; its biography, artwork, credentials, and contact links appear after clicking About me. Blog and Resume use the published external destinations. The voice/chat guide is omitted.
 
 ## Local preview
