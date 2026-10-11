@@ -117,7 +117,7 @@ for(const [name,width,height,insets] of [
   const {readFile}=await import('node:fs/promises');
   const css=await readFile(new URL('../src/styles.css',import.meta.url),'utf8');
   // Desktop engines report zero device insets; exercise realistic notch values.
-  await page.route('**/src/styles.css',route=>route.fulfill({contentType:'text/css',body:css.replace(/env\(safe-area-inset-(top|right|bottom|left)\)/g,(_,edge)=>`${insets[edge]}px`)}));
+  await page.route('**/src/styles.css*',route=>route.fulfill({contentType:'text/css',body:css.replace(/env\(safe-area-inset-(top|right|bottom|left)\)/g,(_,edge)=>`${insets[edge]}px`)}));
   await page.setViewportSize({width,height});
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/about');

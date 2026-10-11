@@ -1,6 +1,7 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js';
 
 const data = await fetch('/content/published.json').then(response => {
   if (!response.ok) throw new Error('Could not load portfolio content');
@@ -96,85 +97,16 @@ stage.addEventListener('pointerleave',()=> {
   drawConnector();
 });
 
-function animationVariant() {
-  if (innerWidth < 760 && innerHeight > innerWidth) return 'phone';
-  if (innerWidth/innerHeight < 1.5) return 'tablet';
-  return 'desktop';
-}
-const animations = [...document.querySelectorAll('[data-animation]')].map(frame=> {
-  const video=frame.querySelector('video'), poster=frame.querySelector('.scene-poster'), button=frame.querySelector('.animation-toggle');
-  const animation={frame,video,poster,button,userPaused:false,failed:false,variant:null};
-  video.muted=true;
-  video.defaultMuted=true;
-  video.playsInline=true;
-  video.addEventListener('playing',()=> {
-    if (!shouldPlay(animation)) {video.pause();return;}
-    frame.classList.add('is-playing');
-    paintPlaybackControl(animation);
-  });
-  video.addEventListener('error',()=> {
-    animation.failed=true;
-    frame.classList.remove('is-playing');
-    paintPlaybackControl(animation);
-  });
-  button.addEventListener('click',()=> {
-    if(!video.paused){animation.userPaused=true;updatePlayback();return;}
-    animation.userPaused=false;
-    if(animation.failed){video.removeAttribute('src');animation.failed=false;}
-    // Setting the source and calling play happen synchronously inside this
-    // trusted tap, including when Safari has blocked automatic playback.
-    updatePlayback();
-  });
-  return animation;
-});
-
-function animationIsActive(animation){
-  return currentView===animation.frame.dataset.animation && !(currentView==='about' && document.body.dataset.aboutStory==='true');
-}
-function shouldPlay(animation) {
-  return animationIsActive(animation) && !document.hidden && !dialog.open && !animation.userPaused && !animation.failed;
-}
-function paintPlaybackControl(animation){
-  const {frame,video,button}=animation;
-  button.hidden=!animationIsActive(animation);
-  const paused=video.paused||animation.userPaused||animation.failed;
-  const loading=!paused&&!frame.classList.contains('is-playing');
-  button.classList.toggle('has-label',paused||loading);
-  button.textContent=paused?(animation.failed?'Retry animation':'Play animation'):loading?'Loading…':'Ⅱ';
-  button.setAttribute('aria-label',paused?(animation.failed?'Retry animation':'Play animation'):'Pause animation');
-}
-function updatePlayback() {
-  for (const animation of animations) {
-    const {frame,video,poster,button}=animation;
-    const active=animationIsActive(animation);
-    sparks[frame.dataset.animation].setActive(active&&!dialog.open,!animation.userPaused);
-    if(active) {
-      const variant=animationVariant();
-      if(animation.variant!==variant) {
-        animation.variant=variant;animation.failed=false;
-        frame.classList.remove('is-playing');
-        poster.src=`/media/${frame.dataset.animation}-${variant}.webp`;
-        video.poster=poster.src;
-        if(video.hasAttribute('src')) {video.pause();video.removeAttribute('src');video.load();}
-      }
-      if(!animation.failed && !video.hasAttribute('src')) {
-        video.src=`/media/${frame.dataset.animation}-${variant}.mp4`;
-        video.load();
-      }
-    }
-    if(shouldPlay(animation)) {
-      video.play().catch(()=> {
-        if(!animationIsActive(animation)||animation.userPaused)return;
-        frame.classList.remove('is-playing');paintPlaybackControl(animation);
-      });
-    } else video.pause();
-    paintPlaybackControl(animation);
+function updateSparkState() {
+  for(const animation of animations) {
+    sparks[animation.frame.dataset.animation].setActive(animationIsActive(animation)&&!dialog.open,!animation.userPaused);
   }
 }
-for(const animation of animations) {
-  for(const name of ['play','pause','waiting'])animation.video.addEventListener(name,()=>paintPlaybackControl(animation));
+function updatePlayback() {
+  updateAnimationPlayback();
+  updateSparkState();
 }
-document.addEventListener('visibilitychange',updatePlayback);
+document.addEventListener("animationstatechange",updateSparkState);
 
 function routeState() {
   const path=location.pathname.replace(/\/$/,'')||'/';

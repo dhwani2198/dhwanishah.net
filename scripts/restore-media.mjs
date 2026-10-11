@@ -20,6 +20,8 @@ async function digestFile(path) {
 export async function restoreOriginalMedia(root = resolve(import.meta.dirname, '..')) {
   const entries = JSON.parse(await readFile(resolve(root, 'media-chunks/index.json'), 'utf8'));
   const videos = JSON.parse(await readFile(resolve(root, 'public/media/manifest.json'), 'utf8'));
+  const phone = JSON.parse(await readFile(resolve(root, 'public/media/phone-framing.json'), 'utf8'));
+  videos.push(phone);
   await mkdir(resolve(root, 'public/media'), { recursive: true });
   for (const entry of entries) {
     const original = videos.find(video => video.name === entry.name);

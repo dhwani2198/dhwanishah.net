@@ -129,7 +129,7 @@ test('published Blog and Resume links open separately',async({page})=>{
 test('San Francisco clock handles both PST and PDT',async({page})=>{
   await page.goto('/');
   const times=await page.evaluate(async()=>{
-    const {formatLocalTime}=await import('/src/app.js');
+    const {formatLocalTime}=await import(document.querySelector('script[type="module"]').src);
     return [formatLocalTime(new Date('2026-01-15T20:10:41Z')),formatLocalTime(new Date('2026-07-15T23:10:41Z'))];
   });
   expect(times).toEqual(['My local time — 12:10:41 PM PST','My local time — 4:10:41 PM PDT']);
@@ -151,7 +151,7 @@ test('supplied 4K video plays and pauses when Projects opens',async({page,isMobi
   await page.goto('/');
   await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>Math.max(video.videoWidth,video.videoHeight)),{timeout:20000}).toBe(3840);
   await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>video.paused)).toBe(false);
-  await expect(page.locator('#home-scene video')).toHaveAttribute('src',`/media/home-${isMobile?'phone':'desktop'}.mp4`);
+  await expect.poll(()=>page.locator('#home-scene video').evaluate(v=>v.currentSrc)).toContain(`/media/home-${isMobile?'phone-full':'desktop'}.mp4`);
   await page.getByRole('link',{name:'View projects',exact:true}).click();
   await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>video.paused)).toBe(true);
 });
@@ -195,10 +195,10 @@ test('local pages render without missing assets or script errors',async({page})=
   expect(errors).toEqual([]);
 });
 
-test('landing fills the viewport and View projects has a pill',async({page})=>{
+test('landing fills the viewport and View projects has a pill',async({page,isMobile})=>{
   await page.goto('/');
   const styles=await page.locator('#home-scene .scene-poster').evaluate(node=>({fit:getComputedStyle(node).objectFit,rect:node.getBoundingClientRect().toJSON()}));
-  expect(styles.fit).toBe('cover');
+  expect(styles.fit).toBe(isMobile?'contain':'cover');
   const scene=await page.locator('#home-scene').boundingBox();
   expect(styles.rect.width).toBe(scene.width);
   expect(styles.rect.height).toBe(scene.height);

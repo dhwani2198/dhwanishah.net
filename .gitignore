@@ -11,4 +11,5 @@ finalabout/
 # These exact originals are reconstructed from media-chunks/ during the build.
 public/media/home-desktop.mp4
 public/media/home-tablet.mp4
+public/media/home-phone-full.mp4
 *.assembling

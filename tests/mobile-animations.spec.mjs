@@ -32,9 +32,12 @@ test('blocked autoplay offers a working trusted-tap control for both 4K videos',
     await expect(scene.locator('.scene-poster')).toBeVisible();
     if(isMobile)await button.tap();else await button.click();
     await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>0&&Math.max(v.videoWidth,v.videoHeight)===3840),{timeout:20000}).toBe(true);
-    await scene.getByRole('button',{name:'Pause animation'}).click();
-    await expect.poll(()=>video.evaluate(v=>v.paused)).toBe(true);
-    await expect(button).toBeVisible();
+    if(isMobile)await expect(scene.locator('.animation-toggle')).toBeHidden();
+    else {
+      await scene.getByRole('button',{name:'Pause animation'}).click();
+      await expect.poll(()=>video.evaluate(v=>v.paused)).toBe(true);
+      await expect(button).toBeVisible();
+    }
   }
 });
 
@@ -66,10 +69,7 @@ test('touch taps create brief sparks only on Home and About animation pages',asy
   await page.touchscreen.tap(170,await page.evaluate(()=>innerHeight-24));
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBeGreaterThan(0);
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBe(0);
-  await page.locator('#home-scene .animation-toggle').tap();
-  await page.touchscreen.tap(170,350);
-  await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBeGreaterThan(0);
-  await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBe(0);
+  await expect(page.locator('#home-scene .animation-toggle')).toBeHidden();
   await page.getByRole('link',{name:'About',exact:true}).tap();
   await page.touchscreen.tap(170,350);
   await expect.poll(()=>sparkPixels(page,'.about-sparks')).toBeGreaterThan(0);
@@ -81,6 +81,101 @@ test('touch taps create brief sparks only on Home and About animation pages',asy
   await page.touchscreen.tap(170,650);
   expect(await sparkPixels(page,'.home-sparks')).toBe(0);
   expect(await sparkPixels(page,'.about-sparks')).toBe(0);
+});
+
+for(const route of ['/','/about'])test(`first visit to ${route} autoplays 4K before content loads, without navigation`,async({page,isMobile})=>{
+  let releaseContent;
+  const waiting=new Promise(resolve=>{releaseContent=resolve;});
+  await page.route('**/content/published.json',async request=>{await waiting;await request.continue();});
+  try {
+    await page.goto(route,{waitUntil:'domcontentloaded'});
+    const scene=page.locator(route==='/'?'#home-scene':'.about-hero');
+    const video=scene.locator('video');
+    await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1&&Math.max(v.videoWidth,v.videoHeight)===3840),{timeout:20000}).toBe(true);
+    await expect(scene.locator('.animation-frame')).toHaveClass(/is-playing/);
+    const initial=await video.evaluate(v=>v.currentTime);
+    await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(initial+.15);
+    await expect(page.locator('#local-time')).toHaveText('My local time —');
+    if(isMobile)await expect(scene.locator('.animation-toggle')).toBeHidden();
+    expect(await video.evaluate(v=>getComputedStyle(v).opacity)).toBe('1');
+  } finally {releaseContent();}
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+});
+
+test('a first-load playback interruption recovers automatically without a tap',async({page,isMobile})=>{
+  await page.addInitScript(()=>{
+    const play=HTMLMediaElement.prototype.play;
+    let attempts=0;
+    HTMLMediaElement.prototype.play=function(){
+      attempts++;
+      if(attempts===1)return Promise.reject(new DOMException('Startup interrupted','AbortError'));
+      return play.call(this);
+    };
+    for(const name of ['play','playing'])document.addEventListener(name,event=>{
+      if(attempts<2&&event.target instanceof HTMLMediaElement)event.target.pause();
+    },true);
+  });
+  await page.goto('/');
+  const scene=page.locator('#home-scene');
+  await expect.poll(()=>scene.locator('video').evaluate(v=>!v.paused&&v.currentTime>.1),{timeout:20000}).toBe(true);
+  await expect(scene.locator('.animation-frame')).toHaveClass(/is-playing/);
+  if(isMobile)await expect(scene.locator('.animation-toggle')).toBeHidden();
+});
+
+test('slow phone buffering never adds Loading or Pause controls during automatic playback',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone presentation.');
+  await page.route('**/media/*.mp4',async route=>{await new Promise(resolve=>setTimeout(resolve,1200));await route.continue();});
+  for(const path of ['/','/about']){
+    await page.goto(path,{waitUntil:'domcontentloaded'});
+    const scene=page.locator(path==='/'?'#home-scene':'.about-hero');
+    await expect(scene.locator('.animation-toggle')).toBeHidden();
+    await expect.poll(()=>scene.locator('video').evaluate(v=>v.currentTime>.1&&!v.paused),{timeout:20000}).toBe(true);
+    await expect(scene.locator('.animation-toggle')).toBeHidden();
+    await expect(scene).not.toContainText('Loading');
+  }
+});
+
+for(const target of ['control','canvas'])test(`browser-required ${target} tap resumes once and keeps the phone movie playing`,async({page,isMobile})=>{
+  test.skip(!isMobile,'Trusted phone taps.');
+  await page.addInitScript(()=>{
+    const play=HTMLMediaElement.prototype.play;
+    let unlocked=false;
+    for(const name of ['touchend','click'])document.addEventListener(name,event=>{if(event.isTrusted)unlocked=true;},true);
+    HTMLMediaElement.prototype.play=function(){
+      return unlocked?play.call(this):Promise.reject(new DOMException('Requires gesture','NotAllowedError'));
+    };
+    for(const name of ['play','playing'])document.addEventListener(name,event=>{
+      if(!unlocked&&event.target instanceof HTMLMediaElement)event.target.pause();
+    },true);
+  });
+  await page.goto('/');
+  const scene=page.locator('#home-scene');
+  await expect(scene.getByRole('button',{name:'Play animation'})).toBeVisible();
+  if(target==='control')await scene.getByRole('button',{name:'Play animation'}).tap();
+  else await page.touchscreen.tap(160,350);
+  await expect.poll(()=>scene.locator('video').evaluate(v=>!v.paused&&v.currentTime>.1),{timeout:20000}).toBe(true);
+  await expect(scene.locator('.animation-toggle')).toBeHidden();
+  const initial=await scene.locator('video').evaluate(v=>v.currentTime);
+  await expect.poll(()=>scene.locator('video').evaluate(v=>v.currentTime)).toBeGreaterThan(initial+.2);
+});
+
+for(const [width,height] of [[320,568],[393,641],[430,932]])test(`phone ${width} × ${height} keeps the complete 4K valley in frame`,async({page})=>{
+  await page.setViewportSize({width,height});
+  await page.goto('/');
+  const video=page.locator('#home-scene video');
+  await expect.poll(()=>video.evaluate(v=>v.videoHeight),{timeout:20000}).toBe(3840);
+  expect(await video.evaluate(v=>v.videoWidth)).toBe(2160);
+  await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain('/media/home-phone-full.mp4');
+  const view=await video.evaluate(v=>{
+    const box=v.getBoundingClientRect();
+    const scale=(getComputedStyle(v).objectFit==='contain'?Math.min:Math.max)(box.width/v.videoWidth,box.height/v.videoHeight);
+    return {left:box.x+(box.width-v.videoWidth*scale)/2,right:box.x+(box.width+v.videoWidth*scale)/2,
+      top:box.y+(box.height-v.videoHeight*scale)/2,bottom:box.y+(box.height+v.videoHeight*scale)/2};
+  });
+  expect(view.left).toBeGreaterThanOrEqual(0);
+  expect(view.right).toBeLessThanOrEqual(width+.01);
+  expect(view.top).toBeGreaterThanOrEqual(0);
+  expect(view.bottom).toBeLessThanOrEqual(height+.01);
 });
 
 for(const [width,height] of [[390,664],[430,932]])test(`portrait phone ${width} × ${height} shows the full About illustration across the available width`,async({page})=>{
@@ -103,4 +198,21 @@ for(const [width,height] of [[390,664],[430,932]])test(`portrait phone ${width} 
   const read=await page.locator('.about-read').boundingBox();
   expect(artwork.top).toBeGreaterThan(nav.y+nav.height);
   expect(artwork.bottom).toBeLessThan(read.y);
+});
+
+test('phone toolbar height changes keep the frame filled and playback continuous',async({page})=>{
+  await page.setViewportSize({width:393,height:641});
+  await page.goto('/');
+  const video=page.locator('#home-scene video');
+  await expect.poll(()=>video.evaluate(v=>v.currentTime),{timeout:20000}).toBeGreaterThan(.1);
+  await video.evaluate(v=>{window.metadataReloads=0;v.addEventListener('loadedmetadata',()=>window.metadataReloads++);});
+  for(const height of [740,641]){
+    const before=await video.evaluate(v=>v.currentTime);
+    await page.setViewportSize({width:393,height});
+    await expect.poll(()=>page.locator('#home-scene').evaluate(n=>n.getBoundingClientRect().height)).toBe(height);
+    await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
+    expect(await page.evaluate(()=>window.metadataReloads)).toBe(0);
+    expect(await page.evaluate(()=>scrollY)).toBe(0);
+    expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
+  }
 });

@@ -1,0 +1,19 @@
+{
+  "name": "home-phone-full",
+  "width": 2160,
+  "height": 3840,
+  "fps": 30,
+  "bytes": 129184882,
+  "sha256": "553e1ff08817104b7847bf03fab5cc7104303083c24c4e21a207f25935cf3b9d",
+  "source": "home-tablet",
+  "sourceSha256": "233e90c2c4e650fde26998e1e4551bf2d8165460608950f932dca0d36184ecef",
+  "skySource": "home-phone",
+  "skySourceSha256": "86b758433e1e2ccd47e122f13fe53bde10b4022eba29977d5ef22742cbc2e211",
+  "composition": {
+    "x": 0,
+    "y": 2220,
+    "width": 2160,
+    "height": 1620
+  },
+  "posterSha256": "7c70df11763751dafe26a672260ebf157ebf0969ead726f72885ef0446b2a3ef"
+}

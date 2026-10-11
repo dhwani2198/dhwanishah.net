@@ -38,5 +38,25 @@
         "sha256": "3632e2348e0b53bf9a1232cd73e0f8eb317c3aa22bd40b663345a630e55b393e"
       }
     ]
+  },
+  {
+    "name": "home-phone-full",
+    "parts": [
+      {
+        "file": "home-phone-full.part-001",
+        "bytes": 50331648,
+        "sha256": "572df4397c74356299aef9255ecb21f0804c3e48bbb24f1b588fc6fde9a19520"
+      },
+      {
+        "file": "home-phone-full.part-002",
+        "bytes": 50331648,
+        "sha256": "d3ce3b8c67e774c72231344f87cdd6825044bec11ccc89c155f535fdfffbadf0"
+      },
+      {
+        "file": "home-phone-full.part-003",
+        "bytes": 28521586,
+        "sha256": "4dae8ca201177d1db3d796eb33a119f49974ea075dfb74413492e02ea3e5eecc"
+      }
+    ]
   }
 ]
