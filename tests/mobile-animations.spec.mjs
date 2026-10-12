@@ -240,7 +240,7 @@ test('phone toolbar height changes keep the frame filled and playback continuous
   }
 });
 
-test('phone browser controls keep the entire movie inside the visible viewport without a window resize',async({page})=>{
+test('phone toolbar-only changes never shrink, shift, or stretch the initial full-height movie',async({page})=>{
   await page.setViewportSize({width:393,height:844});
   await page.addInitScript(()=>{
     // Reproduce separate layout and visible areas, as with phone toolbars.
@@ -269,8 +269,8 @@ test('phone browser controls keep the entire movie inside the visible viewport w
       const box=await media.boundingBox();
       expect(box.x).toBeCloseTo(0,1);
       expect(box.width).toBeCloseTo(393,1);
-      expect(box.y).toBeCloseTo(top,1);
-      expect(box.y+box.height).toBeCloseTo(top+height,1);
+      expect(box.y).toBeCloseTo(0,1);
+      expect(box.height).toBeCloseTo(844,1);
       expect(await media.evaluate(n=>getComputedStyle(n).objectFit)).toBe('fill');
     }
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
@@ -282,5 +282,5 @@ test('phone browser controls keep the entire movie inside the visible viewport w
   await page.evaluate(()=>window.setPhoneVisibleArea(320,0,2,'resize'));
   await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
   await page.evaluate(()=>window.setPhoneVisibleArea(641,0,1,'resize'));
-  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBe(641);
+  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
 });

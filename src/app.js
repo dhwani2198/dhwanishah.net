@@ -1,7 +1,10 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261012-home-visible-6';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261012-native-phone-10';
+
+const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
+document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
 
 const data = await fetch('/content/published.json').then(response => {
   if (!response.ok) throw new Error('Could not load portfolio content');
@@ -113,16 +116,19 @@ function routeState() {
   const project=projects.find(project=>`/${project.id}`===path);
   return {project,story:path==='/about'&&location.hash==='#about-story',view:project?'projects':path==='/about'?'about':location.hash==='#projects'?'projects':'home'};
 }
-function renderLocation({focus=false}={}) {
+function renderLocation({focus=false,preserveScroll=false}={}) {
   const {view,project,story}=routeState();
   const changedView=currentView!==view;
   const changedStory=document.body.dataset.aboutStory!==String(story);
+  const leavingProject=dialog.open&&!project;
+  const phoneFlow=phoneLanding.matches&&!project&&(view==='home'||view==='projects');
+  document.documentElement.dataset.phoneLanding=String(phoneFlow);
   currentView=view;
   document.body.dataset.view=view;
   document.body.dataset.aboutStory=String(story);
   document.querySelector('.about-hero').hidden=story;
   document.getElementById('about-story').hidden=!story;
-  for(const [name,scene] of Object.entries(scenes))scene.hidden=name!==view;
+  for(const [name,scene] of Object.entries(scenes))scene.hidden=phoneFlow&&name!=='about'?false:name!==view;
   document.querySelector('.home-link').hidden=view==='home';
   document.querySelectorAll('[data-nav]').forEach(link=> {
     if(link.dataset.nav===view)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
@@ -131,7 +137,9 @@ function renderLocation({focus=false}={}) {
   const canonical=project?`/${project.id}`:view==='about'?'/about':'/';
   document.querySelector('link[rel="canonical"]').href=`https://dhwanishah.net${canonical}`;
   document.querySelector('meta[name="description"]').content=project?.description||'Dhwani Shah — product design, AI workflows, and architectural design.';
-  if(changedView||changedStory)window.scrollTo({top:0,behavior:'instant'});
+  if(!preserveScroll&&(changedView||changedStory||leavingProject||focus)){
+    window.scrollTo({top:phoneFlow&&view==='projects'?scenes.projects.offsetTop:0,behavior:'instant'});
+  }
   if(project) {
     selectProject(project.id);
     if(currentArticle!==project.id) {
@@ -170,6 +178,12 @@ function renderLocation({focus=false}={}) {
 }
 function navigate(href) {
   const url=new URL(href,location.href);
+  if(document.documentElement.dataset.phoneLanding==='true'&&!dialog.open&&url.pathname==='/'&&['','#projects'].includes(url.hash)){
+    if(url.pathname+url.hash!==location.pathname+location.hash)history.pushState(null,'',url.pathname+url.hash);
+    renderLocation({focus:true,preserveScroll:true});
+    window.scrollTo({top:url.hash==='#projects'?scenes.projects.offsetTop:0,behavior:reducedMotion.matches?'instant':'smooth'});
+    return;
+  }
   if(url.pathname===location.pathname && url.hash===location.hash) {
     renderLocation({focus:true});return;
   }
@@ -190,6 +204,18 @@ document.addEventListener('click',event=> {
 });
 addEventListener('popstate',()=>renderLocation());
 addEventListener('hashchange',()=>renderLocation());
+phoneLanding.addEventListener('change',()=>renderLocation({focus:true}));
+let landingScrollFrame=0;
+addEventListener('scroll',()=>{
+  if(document.documentElement.dataset.phoneLanding!=='true'||dialog.open||landingScrollFrame)return;
+  landingScrollFrame=requestAnimationFrame(()=>{
+    landingScrollFrame=0;
+    const view=scenes.projects.getBoundingClientRect().top<=innerHeight*.45?'projects':'home';
+    if(view===currentView)return;
+    history.replaceState(null,'',view==='projects'?'/#projects':'/');
+    renderLocation({preserveScroll:true});
+  });
+},{passive:true});
 addEventListener('resize',()=>{drawConnector();updatePlayback();});
 document.fonts.ready.then(drawConnector);
 

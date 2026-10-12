@@ -76,7 +76,7 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
     const bounds=await page.locator('.preview-panel').boundingBox();
     expect(bounds.x).toBeGreaterThanOrEqual(0);
     expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);
-    const reachableTop=await page.locator('.preview-panel').evaluate(n=>n.getBoundingClientRect().top+document.querySelector('#projects-scene').scrollTop);
+    const reachableTop=await page.locator('.preview-panel').evaluate(n=>n.getBoundingClientRect().top+document.querySelector('#projects-scene').scrollTop+scrollY);
     expect(reachableTop).toBeGreaterThanOrEqual(80);
     // A tall card can scroll, but its CTA must remain reachable and clickable.
     await page.locator('.preview-open').scrollIntoViewIfNeeded();

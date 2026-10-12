@@ -42,30 +42,38 @@ test('About clock and copyright appear after the contact links at the page botto
   await expect(footer).toHaveCSS('position','fixed');
 });
 
-test('phone scrolling keeps the original movie pinned as the browser area grows',async({page,isMobile})=>{
+test('phone swipes and the homepage arrow reach Projects in the same native document',async({page,isMobile})=>{
   test.skip(!isMobile,'Native phone layout.');
-  await page.setViewportSize({width:393,height:641});
+  await page.setViewportSize({width:393,height:844});
   await page.goto('/');
   const video=page.locator('#home-scene video');
   await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1&&v.videoHeight===3840),{timeout:20000}).toBe(true);
-  await video.evaluate(v=>{window.reloads=0;v.addEventListener('loadedmetadata',()=>window.reloads++);});
-  await page.evaluate(()=>scrollTo({top:140,behavior:'instant'}));
-  expect(await page.evaluate(()=>scrollY)).toBeGreaterThan(0);
-  for(const height of [641,740,844]){
-    await page.setViewportSize({width:393,height});
-    const before=await video.evaluate(v=>v.currentTime);
-    for(const media of [video,page.locator('#home-scene .scene-poster')]){
-      const box=await media.boundingBox();
-      expect(box.y).toBeCloseTo(0,1);
-      expect(box.height).toBeCloseTo(height,1);
-      expect(box.width).toBe(393);
-      expect(await media.evaluate(n=>getComputedStyle(n).objectFit)).toBe('fill');
-    }
-    await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
-  }
-  expect(await page.evaluate(()=>window.reloads)).toBe(0);
-  await page.getByRole('link',{name:'View projects',exact:true}).click();
-  expect(await page.evaluate(()=>scrollY)).toBe(0);
+  expect(await page.locator('#projects-scene').evaluate(n=>n.offsetTop)).toBe(844);
+  expect(await page.locator('#home-scene .animation-frame').evaluate(n=>getComputedStyle(n).position)).toBe('fixed');
+  await page.evaluate(()=>scrollTo({top:844,behavior:'instant'}));
+  await expect(page).toHaveURL(/#projects$/);
+  await expect(page.locator('#projects-scene')).toHaveCSS('overflow-y','visible');
+  await expect(page.locator('body')).toHaveAttribute('data-view','projects');
   await page.getByRole('link',{name:'Return to the homepage'}).click();
-  await expect(page.locator('#home-scene')).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+  await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect(page).toHaveURL(/#projects$/);
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(0);
+  await page.locator('.project-list [data-project="tally"]').tap();
+  await page.locator('.preview-panel').tap();
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
+  await page.goBack();
+  await expect(page.locator('#project-viewer')).not.toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThanOrEqual(843);
+  await page.goForward();
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  await page.getByRole('button',{name:'Close project viewer'}).click();
+  await expect(page.locator('#project-viewer')).not.toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThanOrEqual(843);
+  await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
+  await expect(page).toHaveURL(/\/$/);
+  await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
 });

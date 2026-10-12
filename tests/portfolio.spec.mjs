@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 const projects=['tally','sprint-x','curalink','architectural-design'];
 test.beforeEach(async({page})=>{await page.emulateMedia({reducedMotion:'reduce'});});
 
-test('landing keeps one animation screen while phone browser scrolling is available',async({page,isMobile})=>{
+test('phones scroll from the landing into Projects while desktop keeps one landing screen',async({page,isMobile})=>{
   await page.goto('/');
   await expect(page.locator('#home-scene')).toBeVisible();
   await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
@@ -13,9 +13,9 @@ test('landing keeps one animation screen while phone browser scrolling is availa
   await page.keyboard.press('End');
   if(isMobile){
     expect(await page.evaluate(()=>window.scrollY)).toBeGreaterThan(0);
-    const scene=await page.locator('#home-scene').boundingBox();
-    expect(scene.y).toBeCloseTo(0,1);
-    expect(scene.height).toBeCloseTo(await page.evaluate(()=>visualViewport.height),1);
+    await expect(page).toHaveURL(/#projects$/);
+    await expect(page.locator('#projects-scene')).toBeVisible();
+    expect(await page.locator('#projects-scene').evaluate(n=>getComputedStyle(n).overflowY)).toBe('visible');
   }else expect(await page.evaluate(()=>window.scrollY)).toBe(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(!isMobile);
