@@ -2,6 +2,28 @@
 // the first visit. Native sources in the HTML also start loading immediately.
 const touch = matchMedia('(hover: none)');
 const dialog = document.getElementById('project-viewer');
+const homeScene = document.getElementById('home-scene');
+const portraitPhone = matchMedia('(max-width:759px) and (orientation:portrait)');
+
+// Phone browser controls can obscure part of the CSS layout viewport. Fit the
+// original home frame to the visible area, including toolbar-only changes that
+// do not dispatch a window resize. Preserve normal pinch-to-zoom behavior.
+function fitHomeToVisibleViewport() {
+  const viewport = window.visualViewport;
+  if (!portraitPhone.matches || !viewport || Math.abs(viewport.scale - 1) > .01) {
+    homeScene.style.removeProperty('--home-visible-height');
+    homeScene.style.removeProperty('--home-visible-top');
+    return;
+  }
+  if (viewport.height <= 0) return;
+  homeScene.style.setProperty('--home-visible-height', `${viewport.height}px`);
+  homeScene.style.setProperty('--home-visible-top', `${viewport.offsetTop}px`);
+}
+fitHomeToVisibleViewport();
+window.visualViewport?.addEventListener('resize', fitHomeToVisibleViewport);
+window.visualViewport?.addEventListener('scroll', fitHomeToVisibleViewport);
+for (const name of ['resize', 'pageshow', 'load']) addEventListener(name, fitHomeToVisibleViewport);
+portraitPhone.addEventListener('change', fitHomeToVisibleViewport);
 
 export function animationVariant() {
   if (innerWidth < 760 && innerHeight > innerWidth) return 'phone';

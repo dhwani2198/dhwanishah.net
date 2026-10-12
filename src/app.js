@@ -1,7 +1,7 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261011-phone-fit-4';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261012-home-visible-6';
 
 const data = await fetch('/content/published.json').then(response => {
   if (!response.ok) throw new Error('Could not load portfolio content');

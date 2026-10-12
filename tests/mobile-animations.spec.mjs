@@ -237,3 +237,48 @@ test('phone toolbar height changes keep the frame filled and playback continuous
     expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
   }
 });
+
+test('phone browser controls keep the entire movie inside the visible viewport without a window resize',async({page})=>{
+  await page.setViewportSize({width:393,height:844});
+  await page.addInitScript(()=>{
+    // Reproduce separate layout and visible areas, as with phone toolbars.
+    const viewport=new EventTarget();
+    Object.assign(viewport,{width:393,height:641,offsetTop:32,offsetLeft:0,scale:1});
+    Object.defineProperty(window,'visualViewport',{configurable:true,value:viewport});
+    window.setPhoneVisibleArea=(height,offsetTop,scale,event)=>{
+      Object.assign(viewport,{height,offsetTop,scale});
+      viewport.dispatchEvent(new Event(event));
+    };
+  });
+  await page.goto('/');
+  const scene=page.locator('#home-scene'),video=scene.locator('video');
+  await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1&&v.videoHeight===3840),{timeout:20000}).toBe(true);
+  const source=await video.evaluate(v=>v.currentSrc);
+  await video.evaluate(v=>{
+    window.metadataReloads=0;
+    window.windowResizes=0;
+    v.addEventListener('loadedmetadata',()=>window.metadataReloads++);
+    window.addEventListener('resize',()=>window.windowResizes++);
+  });
+  for(const [height,top,event] of [[641,32,'resize'],[740,0,'resize'],[641,48,'scroll'],[641,0,'resize']]){
+    const before=await video.evaluate(v=>v.currentTime);
+    await page.evaluate(([height,top,event])=>window.setPhoneVisibleArea(height,top,1,event),[height,top,event]);
+    for(const media of [video,scene.locator('.scene-poster')]){
+      const box=await media.boundingBox();
+      expect(box.x).toBeCloseTo(0,1);
+      expect(box.width).toBeCloseTo(393,1);
+      expect(box.y).toBeCloseTo(top,1);
+      expect(box.y+box.height).toBeCloseTo(top+height,1);
+      expect(await media.evaluate(n=>getComputedStyle(n).objectFit)).toBe('fill');
+    }
+    await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
+    expect(await video.evaluate(v=>v.currentSrc)).toBe(source);
+  }
+  expect(await page.evaluate(()=>window.metadataReloads)).toBe(0);
+  expect(await page.evaluate(()=>window.windowResizes)).toBe(0);
+  // A user's deliberate pinch zoom still enlarges the normal layout.
+  await page.evaluate(()=>window.setPhoneVisibleArea(320,0,2,'resize'));
+  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
+  await page.evaluate(()=>window.setPhoneVisibleArea(641,0,1,'resize'));
+  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBe(641);
+});

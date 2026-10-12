@@ -183,7 +183,7 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
 @media(max-height:700px) and (max-width:759px){.preview-panel{max-width:clamp(240px,39svh,440px)}.projects-scene{padding-top:max(90px,calc(env(safe-area-inset-top) + 76px))}.projects-intro{margin-bottom:15px}.project-stage{gap:15px}.project-name{font-size:27px}.preview-description{font-size:8px}.preview-tags{display:none}.preview-open{margin-top:7px;padding-top:7px}.preview-details{padding:10px}.scene{min-height:360px}}
 /* Preserve the entire supplied phone homepage composition at every screen ratio. */
 @media(max-width:759px) and (orientation:portrait){
- .scene.home-scene{background:#0b0711}
+ .scene.home-scene{background:#0b0711;height:var(--home-visible-height,100dvh);top:var(--home-visible-top,0px)}
  /* Explicit geometry keeps the video and poster aligned on mobile Safari. */
  .about-hero .scene-video,.about-hero .scene-poster{width:100%;height:calc(100vw * 16 / 9);aspect-ratio:auto;inset:auto;left:var(--artwork-shift-x,0px);top:calc(50% - 100vw * 8 / 9);transform:none;object-fit:contain;object-position:50% 50%}
 }
