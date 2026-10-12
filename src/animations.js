@@ -2,6 +2,22 @@
 // the first visit. Native sources in the HTML also start loading immediately.
 const touch = matchMedia('(hover: none)');
 const dialog = document.getElementById('project-viewer');
+const phoneScreen=matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
+let phoneWidth=0;
+// Fit the entire authored frame to the area actually visible on first load.
+// Keep that composition stable while browser controls collapse; only a new
+// screen width (rotation) changes it. The hero scrolls away with its section.
+function sizePhoneHero() {
+  if(!phoneScreen.matches){phoneWidth=0;document.documentElement.style.removeProperty('--phone-hero-height');return;}
+  if(Math.abs((visualViewport?.scale||1)-1)>.01)return;
+  const width=Math.round(visualViewport?.width||innerWidth);
+  if(width===phoneWidth)return;
+  phoneWidth=width;
+  document.documentElement.style.setProperty('--phone-hero-height',`${visualViewport?.height||innerHeight}px`);
+}
+sizePhoneHero();
+addEventListener('resize',sizePhoneHero);
+phoneScreen.addEventListener('change',sizePhoneHero);
 
 export function animationVariant() {
   if (innerWidth < 760 && innerHeight > innerWidth) return 'phone';

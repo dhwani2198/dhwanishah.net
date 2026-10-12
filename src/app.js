@@ -1,7 +1,7 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261012-native-phone-10';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261012-phone-projects-11';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -17,6 +17,9 @@ const viewerContent = dialog.querySelector('.viewer-content');
 const preview = document.querySelector('.preview-panel');
 const stage = document.querySelector('.project-stage');
 const connector = document.querySelector('.preview-connector');
+const phonePanels=[...document.querySelectorAll('.phone-project-panel')];
+let phoneProjectIndex=0;
+function phoneProjectTop(){return scenes.projects.offsetTop+(phonePanels[phoneProjectIndex]?.offsetTop||0);}
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const touch = matchMedia('(hover: none)');
 const sparks=Object.fromEntries(['home','about'].map(name=>[
@@ -37,6 +40,7 @@ function tick() {
   const clock = document.getElementById('local-time');
   clock.textContent = formatLocalTime(now);
   clock.dateTime = now.toISOString();
+  document.querySelectorAll('[data-local-time]').forEach(time=>{time.textContent=clock.textContent;time.dateTime=clock.dateTime;});
 }
 tick();
 setInterval(tick,1000);
@@ -138,9 +142,10 @@ function renderLocation({focus=false,preserveScroll=false}={}) {
   document.querySelector('link[rel="canonical"]').href=`https://dhwanishah.net${canonical}`;
   document.querySelector('meta[name="description"]').content=project?.description||'Dhwani Shah — product design, AI workflows, and architectural design.';
   if(!preserveScroll&&(changedView||changedStory||leavingProject||focus)){
-    window.scrollTo({top:phoneFlow&&view==='projects'?scenes.projects.offsetTop:0,behavior:'instant'});
+    window.scrollTo({top:phoneFlow&&view==='projects'?phoneProjectTop():0,behavior:'instant'});
   }
   if(project) {
+    phoneProjectIndex=projects.indexOf(project);
     selectProject(project.id);
     if(currentArticle!==project.id) {
       viewerContent.querySelectorAll('video').forEach(video=>video.pause());
@@ -170,7 +175,7 @@ function renderLocation({focus=false,preserveScroll=false}={}) {
       dialog.querySelector('.expand-viewer').setAttribute('aria-pressed','false');
       dialog.querySelector('.expand-viewer').setAttribute('aria-label','Expand project viewer');
     }
-    if(focus && wasOpen && view==='projects' && selectedProject)document.querySelector(`.project-list [data-project="${selectedProject.id}"]`).focus({preventScroll:true});
+    if(focus && wasOpen && view==='projects' && selectedProject)(phoneFlow?phonePanels[phoneProjectIndex].querySelector('a'):document.querySelector(`.project-list [data-project="${selectedProject.id}"]`)).focus({preventScroll:true});
     else if(focus) document.getElementById('main-content').focus({preventScroll:true});
   }
   updatePlayback();
@@ -179,9 +184,10 @@ function renderLocation({focus=false,preserveScroll=false}={}) {
 function navigate(href) {
   const url=new URL(href,location.href);
   if(document.documentElement.dataset.phoneLanding==='true'&&!dialog.open&&url.pathname==='/'&&['','#projects'].includes(url.hash)){
+    if(url.hash==='#projects')phoneProjectIndex=0;
     if(url.pathname+url.hash!==location.pathname+location.hash)history.pushState(null,'',url.pathname+url.hash);
     renderLocation({focus:true,preserveScroll:true});
-    window.scrollTo({top:url.hash==='#projects'?scenes.projects.offsetTop:0,behavior:reducedMotion.matches?'instant':'smooth'});
+    window.scrollTo({top:url.hash==='#projects'?phoneProjectTop():0,behavior:reducedMotion.matches?'instant':'smooth'});
     return;
   }
   if(url.pathname===location.pathname && url.hash===location.hash) {
@@ -210,6 +216,9 @@ addEventListener('scroll',()=>{
   if(document.documentElement.dataset.phoneLanding!=='true'||dialog.open||landingScrollFrame)return;
   landingScrollFrame=requestAnimationFrame(()=>{
     landingScrollFrame=0;
+    if(document.documentElement.dataset.phoneLanding!=='true'||dialog.open)return;
+    const height=phonePanels[0].offsetHeight;
+    phoneProjectIndex=Math.max(0,Math.min(projects.length-1,Math.round((scrollY-scenes.projects.offsetTop)/height)));
     const view=scenes.projects.getBoundingClientRect().top<=innerHeight*.45?'projects':'home';
     if(view===currentView)return;
     history.replaceState(null,'',view==='projects'?'/#projects':'/');

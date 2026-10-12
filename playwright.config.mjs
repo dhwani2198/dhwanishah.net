@@ -9,6 +9,7 @@ export default defineConfig({
   webServer:{command:'npm start',url:'http://127.0.0.1:4187',reuseExistingServer:true},
   projects:[
     {name:'desktop',use:{...devices['Desktop Chrome'],viewport:{width:1440,height:900}}},
-    {name:'mobile-webkit',use:{...devices['iPhone 13']}}
+    {name:'mobile-webkit',use:{...devices['iPhone 13']}},
+    {name:'mobile-chromium',use:{...devices['iPhone 13'],browserName:'chromium'}}
   ]
 });

@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {projectPreview} from './helpers/project-preview.mjs';
 
 const viewports=[
   ['small phone',320,568],
@@ -68,19 +69,28 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
   await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Projects',exact:true}).click();
   await expect(page.locator('.project-list a')).toHaveCount(5);
   for(const id of projects){
-    const project=page.locator(`.project-list [data-project="${id}"]`);
-    if(isMobile)await project.tap();else await project.focus();
-    await expect(page.locator('.preview-panel')).toHaveAttribute('data-preview-project',id);
-    await loadedImage(page.locator('.preview-original'));
+    const preview=await projectPreview(page,id);
+    await loadedImage(preview.image);
     await fitsWidth(page);
-    const bounds=await page.locator('.preview-panel').boundingBox();
+    const bounds=await preview.card.boundingBox();
     expect(bounds.x).toBeGreaterThanOrEqual(0);
     expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);
-    const reachableTop=await page.locator('.preview-panel').evaluate(n=>n.getBoundingClientRect().top+document.querySelector('#projects-scene').scrollTop+scrollY);
-    expect(reachableTop).toBeGreaterThanOrEqual(80);
-    // A tall card can scroll, but its CTA must remain reachable and clickable.
-    await page.locator('.preview-open').scrollIntoViewIfNeeded();
-    await page.locator('.preview-open').click();
+    if(preview.phone){
+      const nav=await page.locator('.site-nav').boundingBox();
+      const footer=await preview.panel.locator('.phone-panel-footer').boundingBox();
+      expect(bounds.y).toBeGreaterThan(nav.y+nav.height);
+      expect(footer.y).toBeGreaterThan(bounds.y+bounds.height+10);
+      expect(footer.y+footer.height).toBeLessThanOrEqual(height);
+      const proportions=await preview.image.evaluate(n=>({display:n.width/n.height,native:n.naturalWidth/n.naturalHeight}));
+      expect(proportions.display).toBeCloseTo(id==='topnotch'?1:proportions.native,1);
+      await preview.card.click();
+    }else{
+      await expect(preview.card).toHaveAttribute('data-preview-project',id);
+      const reachableTop=await preview.card.evaluate(n=>n.getBoundingClientRect().top+document.querySelector('#projects-scene').scrollTop+scrollY);
+      expect(reachableTop).toBeGreaterThanOrEqual(80);
+      await page.locator('.preview-open').scrollIntoViewIfNeeded();
+      await page.locator('.preview-open').click();
+    }
     await expect(page).toHaveURL(new RegExp(`/${id}$`));
     await expect(page.locator('#project-viewer')).toBeVisible();
     const viewer=await page.locator('#project-viewer').boundingBox();
@@ -137,7 +147,7 @@ for(const [name,width,height,insets] of [
   await page.locator('.about-back').click();
   await expect(page.locator('.about-hero')).toBeVisible();
   await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Projects',exact:true}).click();
-  const intro=await page.locator('.projects-intro').boundingBox();
+  const intro=await page.locator(await page.evaluate(()=>document.documentElement.dataset.phoneLanding==='true')?'.phone-project-card':'.projects-intro').first().boundingBox();
   expect(intro.y).toBeGreaterThan(nav.y+nav.height);
   expect(intro.x).toBeGreaterThanOrEqual(insets.left);
   await fitsWidth(page);

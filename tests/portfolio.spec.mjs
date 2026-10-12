@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {projectPreview,openProject} from './helpers/project-preview.mjs';
 const projects=['tally','sprint-x','curalink','architectural-design'];
 test.beforeEach(async({page})=>{await page.emulateMedia({reducedMotion:'reduce'});});
 
@@ -21,20 +22,19 @@ test('phones scroll from the landing into Projects while desktop keeps one landi
   expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(!isMobile);
 });
 
-test('project arrow opens the list and selected names show the published previews',async({page,isMobile})=>{
+test('project arrow opens published previews in the appropriate phone or desktop layout',async({page,isMobile})=>{
   await page.goto('/');
   await page.getByRole('link',{name:'View projects',exact:true}).click();
   await expect(page).toHaveURL(/#projects$/);
   await expect(page.locator('.project-list a')).toHaveCount(5);
-  const link=page.locator('.project-list [data-project="sprint-x"]');
-  if(isMobile)await link.tap();else await link.hover();
-  await expect(page.locator('.preview-panel')).toBeVisible();
-  await expect(page.locator('.preview-panel .preview-original')).toHaveAttribute('src','/assets/images/2Jvkn49eF0WOnLiSONCsAKZSSRQ.jpg');
-  await expect(page.locator('.preview-panel h2')).toHaveText('Sprint X');
+  const preview=await projectPreview(page,'sprint-x',{hover:!isMobile});
+  await expect(preview.card).toBeVisible();
+  await expect(preview.image).toHaveAttribute('src','/assets/images/2Jvkn49eF0WOnLiSONCsAKZSSRQ.jpg');
+  await expect(preview.card.locator('h2')).toHaveText('Sprint X');
   if(!isMobile)await expect(page.locator('.preview-connector path')).toHaveAttribute('d',/ C /);
   else await expect(page.locator('#project-viewer')).not.toBeVisible();
   await expect(page.getByRole('link',{name:'Open Sprint X project'})).toHaveAttribute('href','/sprint-x');
-  await page.locator('.preview-description').click();
+  await preview.copy.locator('p').click();
   await expect(page.locator('#project-viewer')).toBeVisible();
   await expect(page.locator('#case-title')).toHaveText('Sprint X');
 });
@@ -65,8 +65,7 @@ test('viewer switches projects, scrolls internally, expands, closes, and returns
 test('direct project URLs and browser history preserve viewer state',async({page})=>{
   await page.goto('/#projects');
   const open=async id=>{
-    await page.locator(`.project-list [data-project="${id}"]`).focus();
-    await page.locator('.preview-open').click();
+    await openProject(page,id);
   };
   await open('tally');
   await page.locator('.project-tabs [data-project="sprint-x"]').click();
@@ -86,11 +85,11 @@ test('direct project URLs and browser history preserve viewer state',async({page
 
 test('keyboard previews, modal focus, and Escape work',async({page})=>{
   await page.goto('/#projects');
-  const project=page.locator('.project-list [data-project="tally"]');
-  await project.focus();
-  await expect(page.locator('.preview-panel')).toBeVisible();
+  const preview=await projectPreview(page,'tally');
+  const project=preview.link;
+  await expect(preview.card).toBeVisible();
   // The full preview card also supports keyboard users on touch devices.
-  await page.locator('.preview-panel').focus();
+  await preview.card.focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#project-viewer')).toBeVisible();
   for(let i=0;i<8;i++){
@@ -104,7 +103,7 @@ test('keyboard previews, modal focus, and Escape work',async({page})=>{
   await expect(page.locator('#project-viewer')).toBeVisible();
 });
 
-test('About keeps the published biography, artwork, credentials, and contact links',async({page})=>{
+test('About keeps the published biography, artwork, credentials, and contact links',async({page,isMobile})=>{
   await page.goto('/about');
   await expect(page.locator('#about-scene')).toBeVisible();
   await page.locator('.about-read').click();
@@ -119,7 +118,7 @@ test('About keeps the published biography, artwork, credentials, and contact lin
   await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Projects',exact:true}).click();
   await expect(page).toHaveURL(/#projects$/);
   await expect(page.locator('#projects-scene')).toBeVisible();
-  expect(await page.evaluate(()=>window.scrollY)).toBe(0);
+  expect(await page.evaluate(()=>window.scrollY)).toBe(isMobile?await page.locator('#home-scene').evaluate(n=>n.offsetHeight):0);
 });
 
 test('published Blog and Resume links open separately',async({page})=>{
@@ -170,13 +169,13 @@ test('video failure leaves a poster and usable navigation',async({page})=>{
   await expect(page.locator('#projects-scene')).toBeVisible();
 });
 
-test('tablet and landscape use the supplied compositions without overflowing the homepage',async({page})=>{
+test('tablet and landscape use the supplied compositions with the correct native flow',async({page,isMobile})=>{
   await page.setViewportSize({width:1024,height:768});
   await page.goto('/');
   await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-tablet.webp');
   await page.setViewportSize({width:844,height:390});
   await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-desktop.webp');
-  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);
+  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(!isMobile);
 });
 
 test('About plays its original 4K animation and pauses when the biography is visible',async({page})=>{
@@ -233,7 +232,7 @@ test('local pages render without missing assets or script errors',async({page})=
   for(const route of ['/','/about','/topnotch',...projects.map(id=>'/'+id)]){
     await page.goto(route);
     await expect(page.locator('main')).toBeVisible();
-    await expect(page.locator('.scene:visible,.about-scene:visible')).toBeVisible();
+    await expect(page.locator('body')).toHaveAttribute('data-view',route==='/about'?'about':route==='/'?'home':'projects');
   }
   expect(errors).toEqual([]);
 });
@@ -276,9 +275,8 @@ test('About biography opens only on click, uses black and uniform paragraph size
 
 test('static project cover opens its case study and connector clears the arrow',async({page,isMobile})=>{
   await page.goto('/#projects');
-  const link=page.locator('.project-list [data-project="tally"]');
-  if(isMobile)await link.tap();else await link.hover();
-  await expect(page.locator('.preview-original')).toHaveAttribute('src','/assets/images/krraSyH08fFeIOG9BdqEzE7QuWs.jpg');
+  const preview=await projectPreview(page,'tally',{hover:!isMobile});
+  await expect(preview.image).toHaveAttribute('src','/assets/images/krraSyH08fFeIOG9BdqEzE7QuWs.jpg');
   if(!isMobile){
     const gap=await page.evaluate(()=> {
       const box=document.querySelector('.project-stage').getBoundingClientRect();
@@ -288,10 +286,10 @@ test('static project cover opens its case study and connector clears the arrow',
     });
     expect(gap).toBeGreaterThanOrEqual(19);
   }
-  await page.locator('.preview-original').click();
+  await preview.image.click();
   await expect(page.locator('#project-viewer')).toBeVisible();
   await page.getByRole('button',{name:'Close project viewer'}).click();
-  await expect(page.locator('.preview-original')).toBeVisible();
+  await expect(preview.image).toBeVisible();
 });
 
 test('Say hello resolves from ASCII and uses a proportionate SVG arrow',async({page})=>{
@@ -319,8 +317,7 @@ test('case studies preserve published structure, Tally embeds its demo, and Spri
   expect(Number.parseFloat(labelStyles.spacing)).toBeGreaterThan(1);
   await page.locator('.published-case').evaluate(n=>n.contentWindow.scrollTo(0,400));
   await page.getByRole('button',{name:'Close project viewer'}).click();
-  await page.locator('.project-list [data-project="tally"]').focus();
-  await page.locator('.preview-open').click();
+  await openProject(page,'tally');
   await expect(page.locator('.published-case')).toBeVisible();
   await page.locator('.project-tabs [data-project="sprint-x"]').click();
   const sprint=page.frameLocator('.published-case');
@@ -341,8 +338,8 @@ for(const id of projects)test(`${id} uses its selected full-resolution static co
   const previewMovies=[];
   page.on('request',request=>{if(/\/previews\/.*\.mp4/.test(request.url()))previewMovies.push(request.url());});
   await page.goto('/#projects');
-  await page.locator(`.project-list [data-project="${id}"]`).focus();
-  const image=page.locator('.preview-original');
+  const preview=await projectPreview(page,id);
+  const image=preview.image;
   await expect(image).toHaveAttribute('src',`/assets/images/${coverSources[id]}`);
   await image.evaluate(n=>n.decode());
   expect(await image.evaluate(n=>[n.naturalWidth,n.naturalHeight])).toEqual(coverDimensions[id]);
@@ -396,14 +393,14 @@ test('reduced motion suppresses automatic cursor trails',async({page})=> {
 
 test('TopNotch is coming soon with its published preview, working card, and project switching',async({page,isMobile})=>{
   await page.goto('/#projects');
-  const link=page.locator('.project-list [data-project="topnotch"]');
+  const preview=await projectPreview(page,'topnotch',{hover:!isMobile});
+  const link=preview.link;
   await expect(page.locator('.project-count')).toHaveText('01 — 05');
   await expect(link.locator('.project-status')).toHaveText('Coming soon');
-  if(isMobile)await link.tap();else await link.hover();
-  await expect(page.locator('.preview-status')).toBeVisible();
-  await expect(page.locator('.preview-heading h2')).toHaveText('TopNotch');
-  await expect(page.locator('.preview-open-label')).toHaveText('View preview');
-  const image=page.locator('.preview-original');
+  await expect(preview.card.locator('.project-status')).toBeVisible();
+  await expect(preview.card.locator('h2')).toHaveText('TopNotch');
+  await expect(preview.card.locator(preview.phone?'.phone-card-open':'.preview-open-label')).toHaveText('View preview');
+  const image=preview.image;
   await expect(image).toHaveAttribute('src','/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png');
   await image.evaluate(n=>n.decode());
   expect(await image.evaluate(n=>[n.naturalWidth,n.naturalHeight])).toEqual([2880,1800]);
@@ -428,7 +425,7 @@ test('TopNotch is coming soon with its published preview, working card, and proj
   await expect(page.locator('.project-teaser')).toBeVisible();
   await page.getByRole('button',{name:'Close project viewer'}).click();
   await expect(page).toHaveURL(/#projects$/);
-  await expect(page.locator('.preview-status')).toBeVisible();
+  await expect(preview.card.locator('.project-status')).toBeVisible();
   await page.goto('/topnotch');
   await page.reload();
   await expect(page.locator('#case-title')).toHaveText('TopNotch');

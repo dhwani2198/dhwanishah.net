@@ -221,7 +221,7 @@ for(const [width,height] of [[320,568],[393,641],[390,664],[430,932]])test(`port
   }
 });
 
-test('phone toolbar height changes keep the frame filled and playback continuous',async({page})=>{
+test('phone toolbar height changes preserve the initial composition and playback',async({page,isMobile})=>{
   await page.setViewportSize({width:393,height:641});
   await page.goto('/');
   const video=page.locator('#home-scene video');
@@ -230,7 +230,7 @@ test('phone toolbar height changes keep the frame filled and playback continuous
   for(const height of [740,641]){
     const before=await video.evaluate(v=>v.currentTime);
     await page.setViewportSize({width:393,height});
-    await expect.poll(()=>page.locator('#home-scene').evaluate(n=>n.getBoundingClientRect().height)).toBe(height);
+    await expect.poll(()=>page.locator('#home-scene').evaluate(n=>n.getBoundingClientRect().height)).toBe(isMobile?641:height);
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
     expect(await page.evaluate(()=>window.metadataReloads)).toBe(0);
     expect(await page.evaluate(()=>scrollY)).toBe(0);
@@ -240,7 +240,7 @@ test('phone toolbar height changes keep the frame filled and playback continuous
   }
 });
 
-test('phone toolbar-only changes never shrink, shift, or stretch the initial full-height movie',async({page})=>{
+test('phone toolbar-only changes keep the whole initial visible movie stable',async({page,isMobile})=>{
   await page.setViewportSize({width:393,height:844});
   await page.addInitScript(()=>{
     // Reproduce separate layout and visible areas, as with phone toolbars.
@@ -270,7 +270,7 @@ test('phone toolbar-only changes never shrink, shift, or stretch the initial ful
       expect(box.x).toBeCloseTo(0,1);
       expect(box.width).toBeCloseTo(393,1);
       expect(box.y).toBeCloseTo(0,1);
-      expect(box.height).toBeCloseTo(844,1);
+      expect(box.height).toBeCloseTo(isMobile?641:844,1);
       expect(await media.evaluate(n=>getComputedStyle(n).objectFit)).toBe('fill');
     }
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
@@ -280,7 +280,7 @@ test('phone toolbar-only changes never shrink, shift, or stretch the initial ful
   expect(await page.evaluate(()=>window.windowResizes)).toBe(0);
   // A user's deliberate pinch zoom still enlarges the normal layout.
   await page.evaluate(()=>window.setPhoneVisibleArea(320,0,2,'resize'));
-  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
+  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(isMobile?641:844,1);
   await page.evaluate(()=>window.setPhoneVisibleArea(641,0,1,'resize'));
-  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
+  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(isMobile?641:844,1);
 });

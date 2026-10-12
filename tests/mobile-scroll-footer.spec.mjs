@@ -1,9 +1,9 @@
 import {test,expect} from '@playwright/test';
+import {openProject,projectPreview} from './helpers/project-preview.mjs';
 
 test('first project opening and later switching use the same filled selection without brackets',async({page})=>{
   await page.goto('/#projects');
-  await page.locator('.project-list [data-project="tally"]').focus();
-  await page.locator('.preview-panel').click();
+  await openProject(page,'tally');
   for(const id of ['tally','sprint-x','curalink','tally']){
     if(id!=='tally'||await page.locator('.project-tabs [aria-current="page"]').getAttribute('data-project')!=='tally'){
       await page.locator(`.project-tabs [data-project="${id}"]`).click();
@@ -49,7 +49,9 @@ test('phone swipes and the homepage arrow reach Projects in the same native docu
   const video=page.locator('#home-scene video');
   await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1&&v.videoHeight===3840),{timeout:20000}).toBe(true);
   expect(await page.locator('#projects-scene').evaluate(n=>n.offsetTop)).toBe(844);
-  expect(await page.locator('#home-scene .animation-frame').evaluate(n=>getComputedStyle(n).position)).toBe('fixed');
+  expect(await page.locator('#home-scene .animation-frame').evaluate(n=>getComputedStyle(n).position)).toBe('absolute');
+  await expect(page.locator('.phone-project-panel')).toHaveCount(5);
+  await expect(page.locator('.project-stage')).not.toBeVisible();
   await page.evaluate(()=>scrollTo({top:844,behavior:'instant'}));
   await expect(page).toHaveURL(/#projects$/);
   await expect(page.locator('#projects-scene')).toHaveCSS('overflow-y','visible');
@@ -61,19 +63,50 @@ test('phone swipes and the homepage arrow reach Projects in the same native docu
   await page.getByRole('link',{name:'View projects',exact:true}).click();
   await expect(page).toHaveURL(/#projects$/);
   await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(0);
-  await page.locator('.project-list [data-project="tally"]').tap();
-  await page.locator('.preview-panel').tap();
+  const tally=await projectPreview(page,'tally');
+  const footer=await tally.panel.locator('.phone-panel-footer').boundingBox();
+  const card=await tally.card.boundingBox();
+  expect(footer.y).toBeGreaterThan(card.y+card.height+15);
+  // The hero and its spark canvas have left the viewport completely.
+  for(const selector of ['#home-scene video','.home-sparks']){
+    const bounds=await page.locator(selector).boundingBox();
+    expect(bounds.y+bounds.height).toBeLessThanOrEqual(0);
+  }
+  await tally.image.tap();
   await expect(page.locator('#project-viewer')).toBeVisible();
   expect(await page.evaluate(()=>scrollY)).toBe(0);
   await page.goBack();
   await expect(page.locator('#project-viewer')).not.toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThanOrEqual(843);
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(1688);
   await page.goForward();
   await expect(page.locator('#project-viewer')).toBeVisible();
   await page.getByRole('button',{name:'Close project viewer'}).click();
   await expect(page.locator('#project-viewer')).not.toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThanOrEqual(843);
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(1688);
   await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
   await expect(page).toHaveURL(/\/$/);
   await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
+});
+
+test('project screens fill the visible area after phone controls collapse without resizing the authored hero',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone browser controls.');
+  await page.setViewportSize({width:393,height:641});
+  await page.goto('/');
+  const hero=page.locator('#home-scene');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  expect((await hero.boundingBox()).height).toBe(641);
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(641);
+  await page.setViewportSize({width:393,height:844});
+  // Measure the browser's own resize adjustment without issuing a second scroll.
+  const panel=page.locator('.phone-project-panel[data-phone-project="topnotch"]');
+  await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
+  await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
+  expect((await hero.boundingBox()).height).toBe(641);
+  const footer=await panel.locator('.phone-panel-footer').boundingBox();
+  const card=await panel.locator('.phone-project-card').boundingBox();
+  expect(footer.y).toBeGreaterThan(card.y+card.height+15);
+  expect(footer.y+footer.height).toBeLessThanOrEqual(844);
+  const movie=await hero.locator('video').boundingBox();
+  expect(movie.y+movie.height).toBeLessThanOrEqual(0);
 });
