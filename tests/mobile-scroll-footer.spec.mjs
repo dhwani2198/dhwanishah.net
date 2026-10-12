@@ -23,6 +23,12 @@ test('first project opening and later switching use the same filled selection wi
 
 test('About clock and copyright appear after the contact links at the page bottom',async({page})=>{
   await page.goto('/about#about-story');
+  const main=page.locator('#main-content');
+  await main.focus();
+  await expect(main).toHaveCSS('border-radius','0px');
+  await expect(main).toHaveCSS('outline-style','none');
+  await expect(main).toHaveCSS('outline-width','0px');
+  await expect(main).toHaveCSS('outline-offset','0px');
   const footer=page.locator('.site-footer');
   await expect(page.locator('#local-time')).toContainText(/\d/);
   expect((await footer.boundingBox()).y).toBeGreaterThan(await page.evaluate(()=>innerHeight));
