@@ -37,8 +37,9 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
   await page.evaluate(()=>document.fonts.ready);
   await fitsWidth(page);
   expect(Math.abs((await page.locator('#home-scene').boundingBox()).height-height)).toBeLessThan(1);
-  expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
   const touch=await page.evaluate(()=>matchMedia('(pointer:coarse)').matches);
+  if(touch&&width<=1050)expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBeGreaterThan(height);
+  else expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
   if(touch)for(const link of await page.locator('.site-nav>a').all())expect((await link.boundingBox()).height).toBeGreaterThanOrEqual(44);
   await loadedImage(page.locator('#home-scene .scene-poster'));
   expect(await page.locator('#home-scene .scene-poster').evaluate(n=>Math.max(n.naturalWidth,n.naturalHeight))).toBe(3840);

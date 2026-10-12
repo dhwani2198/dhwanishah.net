@@ -143,7 +143,12 @@ function renderLocation({focus=false}={}) {
     document.querySelectorAll('.project-tabs [data-project]').forEach(link=> {
       if(link.dataset.project===project.id)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
     });
-    if(!dialog.open)dialog.showModal();
+    if(!dialog.open){
+      const selectedTab=dialog.querySelector(`.project-tabs [data-project="${project.id}"]`);
+      selectedTab.autofocus=true;
+      dialog.showModal();
+      selectedTab.autofocus=false;
+    }
     if(focus)dialog.querySelector(`[data-project="${project.id}"]`).focus({preventScroll:true});
   } else {
     const wasOpen=dialog.open;
