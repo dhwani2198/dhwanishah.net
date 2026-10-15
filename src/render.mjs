@@ -33,7 +33,7 @@ function renderPhoneProjects(projects) {
   return `<div class="phone-projects" aria-label="Swipe through projects">${projects.map((p,i)=>`<section class="phone-project-panel" data-phone-project="${p.id}" aria-label="${escape(p.title)}, project ${i+1} of ${projects.length}"><a class="phone-project-card" href="/${p.id}" data-project="${p.id}" aria-label="${p.status==='coming-soon'?'Preview':'Open'} ${escape(p.title)} project"><div class="phone-card-media"><img src="${escape(p.preview)}" alt="${escape(p.title)} — published project preview" loading="${i===0?'eager':'lazy'}" decoding="async"></div><div class="phone-card-copy"><div class="phone-card-title"><h2>${escape(p.title)}</h2>${projectStatus(p)}</div><p>${escape(p.description)}</p><div class="preview-tags">${p.tags.map(tag=>`<span>${escape(tag)}</span>`).join('')}</div><span class="phone-card-open">${p.status==='coming-soon'?'View preview':'View project'} ${renderArrow()}</span></div></a></section>`).join('')}</div>`;
 }
 
-const assetVersion='20261014-full-height-phone-13';
+const assetVersion='20261014-project-button-bottom-14';
 function renderAnimation(name,initiallyActive) {
   const variants=[['phone','(max-width:759px) and (orientation:portrait)'],['tablet','(max-aspect-ratio:3/2)'],['desktop','']];
   const file=variant=>`${name}-${variant}`;
