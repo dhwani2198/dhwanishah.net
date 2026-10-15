@@ -42,7 +42,7 @@ function renderProjectDots(projects) {
   return `<nav class="phone-project-dots" aria-label="Project position">${projects.map((p,i)=>`<button type="button" data-phone-project-target="${p.id}" aria-label="Show ${escape(p.title)}, project ${i+1} of ${projects.length}" ${i===0?'aria-current="true"':''}><span aria-hidden="true"></span></button>`).join('')}</nav>`;
 }
 
-const assetVersion='20261014-native-home-uniform-cards-18';
+const assetVersion='20261014-bidirectional-project-paging-19';
 function renderAnimation(name,initiallyActive) {
   const variants=[['phone','(max-width:759px) and (orientation:portrait)'],['tablet','(max-aspect-ratio:3/2)'],['desktop','']];
   const file=variant=>`${name}-${variant}`;

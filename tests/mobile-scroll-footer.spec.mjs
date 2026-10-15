@@ -163,6 +163,93 @@ test('a wheel gesture advances one phone project despite momentum events',async(
   await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','tally');
 });
 
+test('backward swipes go from the last project footer through every card to the first',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone project pager.');
+  await page.setViewportSize({width:393,height:844});
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  await page.evaluate(()=>document.fonts.ready);
+  await page.locator('[data-phone-project-target="architectural-design"]').tap();
+  await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+  expect(await page.evaluate(()=>scrollY)).toBeGreaterThan(2);
+  const card=await page.locator('.phone-project-panel:visible .phone-project-card').boundingBox();
+  const header=await page.locator('.site-header').boundingBox();
+  expect(card.y).toBeGreaterThan(header.y+header.height);
+  expect(card.y+card.height).toBeLessThan(844);
+  // This gesture starts in the footer, outside the project section.
+  expect(await swipe(page,-1,'.site-footer')).toBe(true);
+  for(const id of ['curalink','sprint-x','tally','topnotch']){
+    await expect(currentDot(page)).toHaveAttribute('data-phone-project-target',id);
+    await expect(page.locator('.phone-project-panel:visible')).toHaveCount(1);
+    await expect(page.locator('#project-viewer')).toBeHidden();
+    await expect(page.locator('#home-scene')).toBeHidden();
+    expect(await page.evaluate(()=>scrollY)).toBe(0);
+    if(id!=='topnotch')expect(await swipe(page,-1)).toBe(true);
+  }
+  expect(await swipe(page,-1)).toBe(false);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','topnotch');
+});
+
+test('backward paging ignores empty top padding but lets a clipped card scroll back first',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone project pager.');
+  await page.setViewportSize({width:320,height:540});
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  await page.evaluate(()=>document.fonts.ready);
+  await page.locator('[data-phone-project-target="curalink"]').tap();
+  await page.evaluate(()=>scrollTo({top:10,behavior:'instant'}));
+  expect(await page.evaluate(()=>scrollY)).toBe(10);
+  expect(await swipe(page,-1)).toBe(true);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','sprint-x');
+  // Make a card taller than the viewport, then scroll until its top is hidden.
+  await page.locator('.phone-project-panel:visible .phone-card-copy').evaluate(n=>n.style.paddingBottom='200px');
+  await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+  expect(await swipe(page,-1)).toBe(false);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','sprint-x');
+  await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
+  expect(await swipe(page,-1)).toBe(true);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','tally');
+});
+
+test('native phone touch gestures return from the footer of project five to project one',async({page,isMobile,browserName,context})=>{
+  test.skip(!isMobile||browserName!=='chromium','Native touch injection through Chromium.');
+  await page.setViewportSize({width:393,height:844});
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  await page.evaluate(()=>document.fonts.ready);
+  await page.locator('[data-phone-project-target="architectural-design"]').tap();
+  await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+  expect(await page.evaluate(()=>document.elementFromPoint(190,784).closest('.phone-projects'))).toBeNull();
+  const cdp=await context.newCDPSession(page);
+  const drag=async positions=>{
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:190,y:positions[0]}]});
+    for(const y of positions.slice(1))await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:190,y}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  };
+  await drag([784,799,814,829,839]);
+  for(const id of ['curalink','sprint-x','tally','topnotch']){
+    await expect(currentDot(page)).toHaveAttribute('data-phone-project-target',id);
+    await expect(page.locator('.phone-project-panel:visible')).toHaveCount(1);
+    await expect(page.locator('#project-viewer')).toBeHidden();
+    expect(await page.evaluate(()=>scrollY)).toBe(0);
+    if(id!=='topnotch')await drag([200,270,360,460,560,650]);
+  }
+});
+
+test('reversing a phone wheel gesture pages backward immediately, then preserves one card per burst',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone project pager.');
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  const wheel=deltaY=>page.locator('body').dispatchEvent('wheel',{deltaY,bubbles:true,cancelable:true});
+  await page.locator('[data-phone-project-target="architectural-design"]').tap();
+  await wheel(-100);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','curalink');
+  await wheel(100);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','architectural-design');
+  for(let i=0;i<4;i++)await wheel(-100);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','curalink');
+});
+
 test('a tall phone card scrolls fully before a new gesture changes projects',async({page,isMobile})=>{
   test.skip(!isMobile,'Small phone project pager.');
   await page.setViewportSize({width:320,height:540});

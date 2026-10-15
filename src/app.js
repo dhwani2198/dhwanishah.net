@@ -1,7 +1,7 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-native-home-uniform-cards-18';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-bidirectional-project-paging-19';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -42,10 +42,12 @@ function phoneProjectsActive(){
 function projectScrollEdges(){
   const visibleBottom=Math.min(innerHeight,(visualViewport?.offsetTop||0)+(visualViewport?.height||innerHeight));
   const panel=phonePanels[phoneProjectIndex];
-  const lastContent=phoneProjectIndex===projects.length-1?document.querySelector('.site-footer'):panel.querySelector('.phone-project-card');
+  const card=panel.querySelector('.phone-project-card');
+  const visibleTop=Math.max(visualViewport?.offsetTop||0,document.querySelector('.site-header').getBoundingClientRect().bottom);
+  const lastContent=phoneProjectIndex===projects.length-1?document.querySelector('.site-footer'):card;
   // Empty panel padding must not require an extra swipe once the entire card
   // is readable. Use the visible viewport so browser controls cannot hide it.
-  return {top:scrollY<=2,bottom:lastContent.getBoundingClientRect().bottom<=visibleBottom+2};
+  return {top:scrollY<=2||card.getBoundingClientRect().top>=visibleTop-2,bottom:lastContent.getBoundingClientRect().bottom<=visibleBottom+2};
 }
 function canPageProject(direction,edges=projectScrollEdges()){
   return direction>0?edges.bottom&&phoneProjectIndex<projects.length-1:edges.top&&phoneProjectIndex>0;
@@ -53,18 +55,20 @@ function canPageProject(direction,edges=projectScrollEdges()){
 // A swipe pages once. Native scrolling remains available inside a tall card;
 // reaching its edge requires a new gesture before changing projects.
 let projectSwipe=null;
-const phoneCards=document.querySelector('.phone-projects');
-phoneCards.addEventListener('touchstart',event=>{
+// The last project's footer is outside .phone-projects. Listen across the
+// active project screen so reversing a swipe works there and in blank space.
+const phonePager=document.body;
+phonePager.addEventListener('touchstart',event=>{
   if(!phoneProjectsActive()||event.touches.length!==1){projectSwipe=null;return;}
   const finger=event.touches[0];
   projectSwipe={x:finger.clientX,y:finger.clientY,edges:projectScrollEdges()};
 },{passive:true});
-phoneCards.addEventListener('touchmove',event=>{
-  if(!projectSwipe||event.touches.length!==1){projectSwipe=null;return;}
+phonePager.addEventListener('touchmove',event=>{
+  if(!projectSwipe||!phoneProjectsActive()||event.touches.length!==1){projectSwipe=null;return;}
   const finger=event.touches[0],dy=projectSwipe.y-finger.clientY,dx=projectSwipe.x-finger.clientX;
   if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)*1.25&&canPageProject(Math.sign(dy),projectSwipe.edges))event.preventDefault();
 },{passive:false});
-phoneCards.addEventListener('touchend',event=>{
+phonePager.addEventListener('touchend',event=>{
   const gesture=projectSwipe;
   projectSwipe=null;
   if(!gesture||!phoneProjectsActive()||event.touches.length||event.changedTouches.length!==1)return;
@@ -73,19 +77,21 @@ phoneCards.addEventListener('touchend',event=>{
   event.preventDefault();
   showPhoneProject(phoneProjectIndex+Math.sign(dy));
 },{passive:false});
-phoneCards.addEventListener('touchcancel',()=>{projectSwipe=null;},{passive:true});
+phonePager.addEventListener('touchcancel',()=>{projectSwipe=null;},{passive:true});
 let wheelDistance=0,wheelDirection=0,wheelPaged=false,wheelReset,wheelEdges=null;
-scenes.projects.addEventListener('wheel',event=>{
+phonePager.addEventListener('wheel',event=>{
   if(!phoneProjectsActive()||event.ctrlKey||Math.abs(event.deltaX)>Math.abs(event.deltaY)||!event.deltaY)return;
   clearTimeout(wheelReset);
   wheelReset=setTimeout(()=>{wheelDistance=0;wheelDirection=0;wheelPaged=false;wheelEdges=null;},200);
+  const direction=Math.sign(event.deltaY);
+  if(wheelDirection&&direction!==wheelDirection){
+    wheelDistance=0;wheelPaged=false;wheelEdges=null;
+  }
+  wheelDirection=direction;
   wheelEdges ||= projectScrollEdges();
   if(wheelPaged){event.preventDefault();return;}
-  const direction=Math.sign(event.deltaY);
   if(!canPageProject(direction,wheelEdges))return;
   event.preventDefault();
-  if(direction!==wheelDirection)wheelDistance=0;
-  wheelDirection=direction;
   wheelDistance+=Math.abs(event.deltaY)*(event.deltaMode===1?16:event.deltaMode===2?innerHeight:1);
   if(wheelDistance>=40){wheelPaged=true;showPhoneProject(phoneProjectIndex+direction);}
 },{passive:false});
