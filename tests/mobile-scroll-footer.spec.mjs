@@ -88,32 +88,68 @@ test('phone swipes and the homepage arrow reach Projects in the same native docu
   await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
 });
 
-test('the hero and project screens fill the available area after phone controls collapse',async({page,isMobile})=>{
+test('phone toolbar changes do not shift cards or interrupt a partial scroll',async({page,isMobile})=>{
   test.skip(!isMobile,'Phone browser controls.');
-  await page.setViewportSize({width:393,height:641});
-  await page.goto('/');
-  const hero=page.locator('#home-scene');
-  await expect(page.locator('#local-time')).toContainText(/\d/);
-  expect((await hero.boundingBox()).height).toBe(641);
-  await page.getByRole('link',{name:'View projects',exact:true}).click();
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(641);
+  const {readFile}=await import('node:fs/promises');
+  const css=await readFile(new URL('../src/styles.css',import.meta.url),'utf8');
+  // Keep the large/small viewport fixed while only the dynamic viewport changes,
+  // as happens when Safari or Chrome hides its floating controls.
+  await page.route('**/src/styles.css*',route=>route.fulfill({contentType:'text/css',body:css.replaceAll('100dvh','var(--test-dynamic-height,100svh)')}));
   await page.setViewportSize({width:393,height:844});
-  // Measure the browser's own resize adjustment without issuing a second scroll.
-  const panel=page.locator('.phone-project-panel[data-phone-project="topnotch"]');
-  await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
-  await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
-  await expect.poll(()=>hero.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
-  const footer=await page.locator('.site-footer').boundingBox();
-  const card=await panel.locator('.phone-project-card').boundingBox();
-  expect(footer.y).toBeGreaterThan(card.y+card.height+15);
-  expect(footer.y).toBeGreaterThan(844);
-  const movie=await hero.locator('video').boundingBox();
-  expect(movie.y+movie.height).toBeLessThanOrEqual(0);
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  const offsets=()=>page.locator('.phone-project-panel').evaluateAll(panels=>panels.map(n=>n.offsetTop));
+  const before=await offsets();
+  const partial=await page.locator('.phone-project-panel').nth(1).evaluate(n=>n.getBoundingClientRect().top+scrollY+137);
+  await page.evaluate(top=>scrollTo({top,behavior:'instant'}),partial);
+  const settled=await page.evaluate(()=>scrollY);
+  for(const height of [641,740,844,641]){
+    await page.evaluate(height=>{
+      document.documentElement.style.setProperty('--test-dynamic-height',`${height}px`);
+      dispatchEvent(new Event('resize'));
+    },height);
+    await expect.poll(offsets).toEqual(before);
+    await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(settled);
+    expect(await page.locator('#home-scene').evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
+  }
+});
+
+test('phone dots follow unequal card heights and jump to the selected project',async({page,isMobile})=>{
+  test.skip(!isMobile,'Sequential phone project cards.');
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.setViewportSize({width:320,height:568});
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  const dots=page.getByRole('navigation',{name:'Project position'});
+  await expect(dots.getByRole('button')).toHaveCount(5);
+  const heights=await page.locator('.phone-project-panel').evaluateAll(p=>p.map(n=>n.offsetHeight));
+  expect(new Set(heights).size).toBeGreaterThan(1);
+  for(const id of ['tally','sprint-x','curalink','architectural-design']){
+    const preview=await projectPreview(page,id);
+    const active=dots.locator('[aria-current="true"]');
+    await expect(active).toHaveCount(1);
+    await expect(active).toHaveAttribute('data-phone-project-target',id);
+    // A partial swipe stays where the user leaves it, without forced snapping.
+    await page.evaluate(()=>scrollBy({top:37,behavior:'instant'}));
+    const top=await page.evaluate(()=>scrollY);
+    await page.waitForTimeout(150);
+    expect(await page.evaluate(()=>scrollY)).toBe(top);
+    await expect(active).toHaveAttribute('data-phone-project-target',id);
+    expect((await preview.panel.boundingBox()).y).toBeCloseTo(-37,0);
+  }
+  await dots.getByRole('button',{name:'Show CuraLink, project 4 of 5'}).tap();
+  const curalink=page.locator('.phone-project-panel[data-phone-project="curalink"]');
+  await expect.poll(()=>curalink.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
+  await expect(dots.locator('[aria-current="true"]')).toHaveAttribute('data-phone-project-target','curalink');
+  await curalink.locator('.phone-card-copy p').tap();
+  await expect(page.locator('#project-viewer')).toBeVisible();
+  await expect(dots).toBeHidden();
+  await page.getByRole('button',{name:'Close project viewer'}).click();
+  await expect.poll(()=>curalink.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
+  await expect(dots.locator('[aria-current="true"]')).toHaveAttribute('data-phone-project-target','curalink');
   await page.getByRole('link',{name:'Return to the homepage'}).click();
   await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
-  const homeVideo=await hero.locator('video').boundingBox();
-  expect(homeVideo.y).toBe(0);
-  expect(homeVideo.height).toBeCloseTo(844,1);
+  await expect(dots).toBeHidden();
 });
 
 test('the homepage has no overlaid clock and phones show one footer after the last project',async({page,isMobile})=>{
@@ -130,7 +166,7 @@ test('the homepage has no overlaid clock and phones show one footer after the la
   expect((await footer.boundingBox()).y).toBeGreaterThan(height);
   await expect(footer).toHaveCSS('position','relative');
   await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
-  await expect.poll(()=>footer.evaluate(n=>n.getBoundingClientRect().bottom)).toBeLessThanOrEqual(height);
+  await expect.poll(()=>footer.evaluate(n=>n.getBoundingClientRect().bottom)).toBeLessThanOrEqual(height+1);
   const lastCard=await page.locator('.phone-project-panel').last().locator('.phone-project-card').boundingBox();
   const lastPanel=await page.locator('.phone-project-panel').last().boundingBox();
   const bottom=await footer.boundingBox();

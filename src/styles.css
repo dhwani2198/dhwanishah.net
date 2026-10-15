@@ -65,18 +65,19 @@ body[data-view=about][data-about-story=true] .about-content{padding-bottom:48px}
 .preview-status{font-size:7px;padding:4px 6px}
 .project-tabs>a:has(.tab-status){display:inline-flex;align-items:center;gap:8px}
 .tab-status{font-size:6px;padding:3px 5px;letter-spacing:0;color:inherit;border-color:currentColor;background:none}
-.preview-panel{display:block;position:absolute;right:0;top:45%;transform:translateY(-50%);width:clamp(260px,29vw,390px);border:1px solid #ffffff10;border-radius:12px;background:#101014;box-shadow:0 20px 80px #0003;z-index:2;overflow:hidden;animation:preview-in .28s ease-out}
+.preview-panel,.phone-project-card{border:1px solid #ffffff10;border-radius:12px;background:#101014;box-shadow:0 20px 80px #0003;overflow:hidden}
+.preview-panel{display:block;position:absolute;right:0;top:45%;transform:translateY(-50%);width:clamp(260px,29vw,390px);z-index:2;animation:preview-in .28s ease-out}
 .preview-image{overflow:hidden}
 .preview-image img{display:block;width:100%;height:auto}
 .preview-panel[data-preview-project="topnotch"] .preview-original,.project-teaser[data-article="topnotch"] .teaser-media img{aspect-ratio:1;object-fit:cover;object-position:65.4% 65.7%}
-.preview-details{padding:18px 22px 21px}
-.preview-heading{display:flex;gap:8px;align-items:center;justify-content:space-between}
-.preview-heading h2{font-size:14px;letter-spacing:-.02em;margin:0;font-weight:400}
-.preview-description{font-size:11px;line-height:1.7;color:#a0a09b;margin:12px 0 16px;max-width:33ch}
+.preview-details,.phone-card-copy{padding:18px 22px 21px}
+.preview-heading,.phone-card-title{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.preview-heading h2,.phone-card-title h2{font-size:14px;letter-spacing:-.02em;margin:0;font-weight:400}
+.preview-description,.phone-card-copy p{font-size:11px;line-height:1.7;color:#a0a09b;margin:12px 0 16px;max-width:33ch}
 .preview-tags{display:flex;flex-wrap:wrap;gap:5px}
 .preview-tags span{font:8px var(--mono);border:1px solid #2d2d33;border-radius:20px;padding:4px 7px;color:#9a9a93}
-.preview-open{display:flex;justify-content:space-between;align-items:center;font:10px var(--mono);margin-top:20px;padding-top:14px;border-top:1px solid #25252c;color:#cac9c0}
-.preview-panel:hover .preview-open,.preview-panel:focus-visible .preview-open{color:white}
+.preview-open,.phone-card-open{display:flex;justify-content:space-between;align-items:center;font:10px var(--mono);margin-top:20px;padding-top:14px;border-top:1px solid #25252c;color:#cac9c0}
+.preview-panel:hover .preview-open,.preview-panel:focus-visible .preview-open,.phone-project-card:active .phone-card-open,.phone-project-card:focus-visible .phone-card-open{color:white}
 .preview-connector{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0;overflow:visible;transition:opacity .2s}
 .preview-connector path{fill:none;stroke:#a8a79a;stroke-width:.8;vector-effect:non-scaling-stroke}
 .preview-connector circle{fill:#c0beac}
@@ -201,36 +202,36 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
    to visualViewport.height ends the artwork above Safari's floating toolbar.
    Only controls are inset; native document scrolling carries the entire hero
    away before the project screens, without a fixed movie spilling into them. */
-html[data-phone-landing=true]{scroll-snap-type:y mandatory;scroll-padding:0}
+html[data-phone-landing=true]{scroll-snap-type:none;scroll-padding:0}
 html[data-phone-landing=true] body[data-view]{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:auto;min-height:0}
-html[data-phone-landing=true] .home-scene{--phone-controls-inset:max(0px,calc(100lvh - var(--phone-controls-bottom,100dvh)));position:relative;top:0;height:100vh;height:100lvh;min-height:0;scroll-snap-align:start;overflow:hidden;isolation:isolate}
+html[data-phone-landing=true] .home-scene{--phone-controls-inset:max(0px,calc(100lvh - var(--phone-controls-bottom,100dvh)));position:relative;top:0;height:100vh;height:100lvh;min-height:0;overflow:hidden;isolation:isolate}
 html[data-phone-landing=true] .home-scene .animation-frame,
 html[data-phone-landing=true] .home-sparks{position:absolute;inset:0;width:100%;height:100%}
 html[data-phone-landing=true] .projects-scene{position:relative;z-index:2;padding:0;height:auto;min-height:0;overflow:visible;overscroll-behavior:auto;background:#000}
 html[data-phone-landing=true] .project-trigger{top:auto;bottom:calc(var(--phone-controls-inset) + 16px)}
 html[data-phone-landing=true] .home-scene .animation-toggle.has-label{bottom:calc(var(--phone-controls-inset) + max(145px,calc(env(safe-area-inset-bottom) + 123px)))}
 .phone-projects{display:none}
+.phone-project-dots{display:none}
+/* Leave room for native scrollbars so a dot tap reaches the button itself. */
+html[data-phone-landing=true] body[data-view=projects] .phone-project-dots{position:fixed;z-index:4;right:max(12px,calc(env(safe-area-inset-right) + 12px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column}
+.phone-project-dots button{display:grid;place-items:center;width:24px;height:36px;padding:0;border:0;background:none}
+.phone-project-dots button>span{width:5px;height:5px;border-radius:50%;background:#626269;transition:background .2s,transform .2s}
+.phone-project-dots button[aria-current=true]>span{background:#fff;transform:scale(1.5)}
+.phone-project-dots button:focus-visible{outline-offset:-2px}
 html[data-phone-landing=true] .projects-intro,
 html[data-phone-landing=true] .project-stage{display:none}
 html[data-phone-landing=true] .phone-projects{display:block}
-html[data-phone-landing=true] .site-footer{display:flex;position:relative;inset:auto;margin:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));padding:24px 0 max(24px,calc(env(safe-area-inset-bottom) + 12px));scroll-snap-align:end}
+html[data-phone-landing=true] .site-footer{display:flex;position:relative;inset:auto;margin:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));padding:24px 0 max(24px,calc(env(safe-area-inset-bottom) + 12px))}
 html[data-phone-landing=true] .site-footer::before{display:none}
-.phone-project-panel{position:relative;height:100svh;height:100dvh;display:grid;grid-template-rows:minmax(0,1fr);padding:max(100px,calc(env(safe-area-inset-top) + 76px)) max(26px,calc(env(safe-area-inset-right) + 16px)) max(36px,calc(env(safe-area-inset-bottom) + 24px)) max(26px,calc(env(safe-area-inset-left) + 16px));scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:#000}
-.phone-project-card{display:grid;grid-template-rows:auto auto;align-self:center;gap:18px;min-height:0;width:100%;max-width:440px;margin:0 auto}
-.phone-card-media{height:min(calc((100vw - 52px)*.75),calc(100dvh - max(100px,calc(env(safe-area-inset-top) + 76px)) - max(18px,calc(env(safe-area-inset-bottom) + 12px)) - 235px));min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;container-type:size}
-.phone-project-panel[data-phone-project=topnotch] .phone-card-media{height:min(calc(100vw - 52px),calc(100dvh - max(100px,calc(env(safe-area-inset-top) + 76px)) - max(18px,calc(env(safe-area-inset-bottom) + 12px)) - 235px))}
-.phone-card-media img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;border-radius:8px}
-.phone-project-panel[data-phone-project=topnotch] .phone-card-media img{width:min(100cqw,100cqh);height:min(100cqw,100cqh);object-fit:cover;object-position:65.4% 65.7%}
-.phone-card-title{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.phone-card-title h2{margin:0;font-size:clamp(23px,7vw,30px);font-weight:400;letter-spacing:-.04em;line-height:1.15}
-.phone-card-copy p{margin:12px 0;font-size:13px;line-height:1.6;color:#aaa9a0}
-.phone-card-copy .preview-tags span{font-size:8px}
-.phone-card-open{display:flex;justify-content:space-between;align-items:center;font:10px var(--mono);padding-top:14px;color:#d5d3c9}
+.phone-project-panel{position:relative;min-height:100svh;display:flex;align-items:center;padding:max(100px,calc(env(safe-area-inset-top) + 76px)) max(36px,calc(env(safe-area-inset-right) + 36px)) max(36px,calc(env(safe-area-inset-bottom) + 24px)) max(36px,calc(env(safe-area-inset-left) + 36px));background:#000}
+.phone-project-card{display:block;flex:none;min-width:0;width:100%;max-width:390px;margin:0 auto}
+.phone-card-media{min-width:0;overflow:hidden}
+.phone-card-media img{display:block;width:100%;height:auto}
+.phone-project-panel[data-phone-project=topnotch] .phone-card-media img{aspect-ratio:1;object-fit:cover;object-position:65.4% 65.7%}
 @media(max-height:500px){
- .phone-project-panel{padding-top:max(86px,calc(env(safe-area-inset-top) + 70px));padding-bottom:max(12px,calc(env(safe-area-inset-bottom) + 8px));gap:12px}
- .phone-project-card{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);grid-template-rows:minmax(0,1fr);height:100%;max-width:none;gap:24px}
- .phone-project-panel .phone-card-media{height:100%}
- .phone-card-copy{align-self:center}.phone-card-title h2{font-size:24px}.phone-card-copy p{font-size:11px;margin:8px 0}.phone-card-open{padding-top:10px}
+ .phone-project-panel{padding-top:max(86px,calc(env(safe-area-inset-top) + 70px));padding-bottom:max(20px,calc(env(safe-area-inset-bottom) + 12px))}
+ .phone-project-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);max-width:700px;align-items:center}
+ .phone-card-copy{padding:16px}.phone-card-title h2{font-size:15px}.phone-card-copy p{font-size:11px;margin:10px 0}.phone-card-open{margin-top:14px;padding-top:10px}
 }
 @media(max-height:600px) and (min-width:760px){.projects-scene{padding-top:100px;padding-bottom:65px}.projects-intro{margin-bottom:18px}.project-stage{min-height:0}.project-name{font-size:38px}.preview-panel{max-width:300px}.preview-description{margin:8px 0}.preview-details{padding:12px 16px}.preview-open{margin-top:10px;padding-top:10px}dialog{inset:80px 5vw 52px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -249,12 +250,13 @@ body[data-view=projects] .site-header::before,body[data-view=about][data-about-s
 @media(max-width:759px){
  #about-story{padding-top:max(92px,calc(env(safe-area-inset-top) + 60px))}
  .preview-panel,.preview-panel[data-preview-project="topnotch"]{max-width:440px}
- .preview-details{padding:16px}
- .preview-heading h2{font-size:15px}
- .preview-description{font-size:12px;line-height:1.7;max-width:none;margin:12px 0}
- .preview-open{min-height:44px;font-size:11px}
+ .preview-details,.phone-card-copy{padding:16px}
+ .preview-heading h2,.phone-card-title h2{font-size:15px}
+ .preview-description,.phone-card-copy p{font-size:12px;line-height:1.7;max-width:none;margin:12px 0}
+ .preview-open,.phone-card-open{min-height:44px;font-size:11px}
  .preview-status{font-size:8px}
  .preview-tags span{font-size:8px}
+ .phone-card-copy .preview-tags{display:flex}
  .contact-links{font-size:11px;gap:12px 18px}
  .portrait{width:clamp(110px,28vw,130px)}
 }

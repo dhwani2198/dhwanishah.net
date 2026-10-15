@@ -66,7 +66,8 @@ test('touch taps create brief sparks only on Home and About animation pages',asy
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBeGreaterThan(0);
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBe(0);
   // Taps near the bottom edge also produce sparks.
-  await page.touchscreen.tap(170,await page.evaluate(()=>innerHeight-24));
+  // Keep clear of the View projects pill, which sits above the bottom controls.
+  await page.touchscreen.tap(20,await page.evaluate(()=>innerHeight-24));
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBeGreaterThan(0);
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBe(0);
   await expect(page.locator('#home-scene .animation-toggle')).toBeHidden();

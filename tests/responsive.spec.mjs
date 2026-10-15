@@ -80,7 +80,14 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
       const footer=await page.locator('.site-footer').boundingBox();
       expect(bounds.y).toBeGreaterThan(nav.y+nav.height);
       expect(footer.y).toBeGreaterThan(bounds.y+bounds.height+10);
-      expect(bounds.y+bounds.height).toBeLessThanOrEqual(height);
+      const panel=await preview.panel.boundingBox();
+      expect(bounds.y+bounds.height).toBeLessThanOrEqual(panel.y+panel.height);
+      // Short phones scroll the complete card in the document, without clipping
+      // its lower copy or adding another scroll container inside the panel.
+      await preview.card.locator('.phone-card-open').scrollIntoViewIfNeeded();
+      const open=await preview.card.locator('.phone-card-open').boundingBox();
+      expect(open.y+open.height).toBeLessThanOrEqual(height+1);
+      await expect(preview.panel).toHaveCSS('overflow-y','visible');
       const proportions=await preview.image.evaluate(n=>({display:n.width/n.height,native:n.naturalWidth/n.naturalHeight}));
       expect(proportions.display).toBeCloseTo(id==='topnotch'?1:proportions.native,1);
       await preview.card.click();

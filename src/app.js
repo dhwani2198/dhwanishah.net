@@ -1,10 +1,13 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-project-button-above-toolbar-15';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-phone-project-cards-16';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
+// The router restores the selected card itself; a delayed native history
+// restoration must not pull Safari back to an older scroll position.
+history.scrollRestoration='manual';
 
 const data = await fetch('/content/published.json').then(response => {
   if (!response.ok) throw new Error('Could not load portfolio content');
@@ -18,8 +21,15 @@ const preview = document.querySelector('.preview-panel');
 const stage = document.querySelector('.project-stage');
 const connector = document.querySelector('.preview-connector');
 const phonePanels=[...document.querySelectorAll('.phone-project-panel')];
+const phoneProjectDots=[...document.querySelectorAll('[data-phone-project-target]')];
 let phoneProjectIndex=0;
-function phoneProjectTop(){return scenes.projects.offsetTop+(phonePanels[phoneProjectIndex]?.offsetTop||0);}
+function phoneProjectTop(){return Math.round((phonePanels[phoneProjectIndex]||scenes.projects).getBoundingClientRect().top+scrollY);}
+function updatePhoneProjectDots(){
+  phoneProjectDots.forEach((dot,index)=>{
+    if(index===phoneProjectIndex)dot.setAttribute('aria-current','true');
+    else dot.removeAttribute('aria-current');
+  });
+}
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const touch = matchMedia('(hover: none)');
 const sparks=Object.fromEntries(['home','about'].map(name=>[
@@ -177,6 +187,7 @@ function renderLocation({focus=false,preserveScroll=false}={}) {
     if(focus && wasOpen && view==='projects' && selectedProject)(phoneFlow?phonePanels[phoneProjectIndex].querySelector('a'):document.querySelector(`.project-list [data-project="${selectedProject.id}"]`)).focus({preventScroll:true});
     else if(focus) document.getElementById('main-content').focus({preventScroll:true});
   }
+  updatePhoneProjectDots();
   updatePlayback();
   drawConnector();
 }
@@ -197,6 +208,12 @@ function navigate(href) {
 }
 document.addEventListener('click',event=> {
   if(event.defaultPrevented || event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)return;
+  const dot=event.target.closest('[data-phone-project-target]');
+  if(dot&&document.documentElement.dataset.phoneLanding==='true'){
+    phoneProjectIndex=projects.findIndex(project=>project.id===dot.dataset.phoneProjectTarget);
+    window.scrollTo({top:phoneProjectTop(),behavior:reducedMotion.matches?'instant':'smooth'});
+    return;
+  }
   const link=event.target.closest('a[data-route],a[data-project]');
   if(!link)return;
   event.preventDefault();
@@ -211,19 +228,29 @@ addEventListener('popstate',()=>renderLocation());
 addEventListener('hashchange',()=>renderLocation());
 phoneLanding.addEventListener('change',()=>renderLocation({focus:true}));
 let landingScrollFrame=0;
-addEventListener('scroll',()=>{
+function syncPhoneScroll(){
   if(document.documentElement.dataset.phoneLanding!=='true'||dialog.open||landingScrollFrame)return;
   landingScrollFrame=requestAnimationFrame(()=>{
     landingScrollFrame=0;
     if(document.documentElement.dataset.phoneLanding!=='true'||dialog.open)return;
-    const height=phonePanels[0].offsetHeight;
-    phoneProjectIndex=Math.max(0,Math.min(projects.length-1,Math.round((scrollY-scenes.projects.offsetTop)/height)));
-    const view=scenes.projects.getBoundingClientRect().top<=innerHeight*.45?'projects':'home';
+    const viewportHeight=visualViewport?.height||innerHeight;
+    const center=(visualViewport?.offsetTop||0)+viewportHeight/2;
+    let nearest=Infinity;
+    phonePanels.forEach((panel,index)=>{
+      const box=panel.getBoundingClientRect();
+      const distance=Math.abs(box.top+box.height/2-center);
+      if(distance<nearest){nearest=distance;phoneProjectIndex=index;}
+    });
+    updatePhoneProjectDots();
+    const view=scenes.projects.getBoundingClientRect().top<=viewportHeight*.45?'projects':'home';
     if(view===currentView)return;
     history.replaceState(null,'',view==='projects'?'/#projects':'/');
     renderLocation({preserveScroll:true});
   });
-},{passive:true});
+}
+addEventListener('scroll',syncPhoneScroll,{passive:true});
+addEventListener('resize',syncPhoneScroll);
+visualViewport?.addEventListener('resize',syncPhoneScroll);
 addEventListener('resize',()=>{drawConnector();updatePlayback();});
 document.fonts.ready.then(drawConnector);
 
