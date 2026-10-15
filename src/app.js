@@ -1,7 +1,7 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-separate-phone-screens-17';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-native-home-uniform-cards-18';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -40,7 +40,12 @@ function phoneProjectsActive(){
   return document.documentElement.dataset.phoneLanding==='true'&&currentView==='projects'&&!dialog.open&&Math.abs((visualViewport?.scale||1)-1)<.01;
 }
 function projectScrollEdges(){
-  return {top:scrollY<=2,bottom:scrollY+innerHeight>=document.documentElement.scrollHeight-2};
+  const visibleBottom=Math.min(innerHeight,(visualViewport?.offsetTop||0)+(visualViewport?.height||innerHeight));
+  const panel=phonePanels[phoneProjectIndex];
+  const lastContent=phoneProjectIndex===projects.length-1?document.querySelector('.site-footer'):panel.querySelector('.phone-project-card');
+  // Empty panel padding must not require an extra swipe once the entire card
+  // is readable. Use the visible viewport so browser controls cannot hide it.
+  return {top:scrollY<=2,bottom:lastContent.getBoundingClientRect().bottom<=visibleBottom+2};
 }
 function canPageProject(direction,edges=projectScrollEdges()){
   return direction>0?edges.bottom&&phoneProjectIndex<projects.length-1:edges.top&&phoneProjectIndex>0;

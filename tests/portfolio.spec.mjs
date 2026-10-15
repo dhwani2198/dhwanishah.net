@@ -409,6 +409,8 @@ test('TopNotch is coming soon with its published preview, working card, and proj
   expect(await image.evaluate(n=>getComputedStyle(n).objectPosition.split(' ').map(value=>Math.round(parseFloat(value)*10)/10))).toEqual([65.4,65.7]);
   const coverBounds=await image.boundingBox();
   expect(Math.abs(coverBounds.width-coverBounds.height)).toBeLessThan(1);
+  const coverFrame=await image.locator('..').boundingBox();
+  expect(coverFrame.width/coverFrame.height).toBeCloseTo(4/3,2);
   await image.click();
   await expect(page).toHaveURL(/\/topnotch$/);
   await expect(page.locator('#project-viewer')).toBeVisible();

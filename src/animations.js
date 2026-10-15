@@ -14,11 +14,13 @@ function placePhoneControls() {
   if(Math.abs((visualViewport?.scale||1)-1)>.01)return;
   const height=visualViewport?.height||innerHeight;
   const top=Math.max(0,visualViewport?.offsetTop||0);
-  style.setProperty('--phone-controls-bottom',`${top+height}px`);
+  const homeScroll=document.body.dataset.view==='home'?Math.max(0,scrollY):0;
+  style.setProperty('--phone-controls-bottom',`${homeScroll+top+height}px`);
 }
 placePhoneControls();
 addEventListener('resize',placePhoneControls);
 addEventListener('pageshow',placePhoneControls);
+addEventListener('scroll',placePhoneControls,{passive:true});
 visualViewport?.addEventListener('resize',placePhoneControls);
 visualViewport?.addEventListener('scroll',placePhoneControls);
 phoneScreen.addEventListener('change',placePhoneControls);

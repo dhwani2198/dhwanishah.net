@@ -88,7 +88,7 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
       expect(open.y+open.height).toBeLessThanOrEqual(height+1);
       await expect(preview.panel).toHaveCSS('overflow-y','visible');
       const proportions=await preview.image.evaluate(n=>({display:n.width/n.height,native:n.naturalWidth/n.naturalHeight}));
-      expect(proportions.display).toBeCloseTo(id==='topnotch'?1:proportions.native,1);
+      expect(proportions.display).toBeCloseTo(id==='topnotch'?1:4/3,1);
       await preview.card.click();
     }else{
       await expect(preview.card).toHaveAttribute('data-preview-project',id);
