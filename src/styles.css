@@ -42,7 +42,7 @@ main:focus{outline:0;outline-offset:0;border-radius:0}
 .trigger-arrow{width:20px;height:20px;transition:transform .25s}
 .project-trigger:hover .trigger-arrow{transform:translateY(4px)}
 .site-footer{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:max(var(--edge),env(safe-area-inset-left));right:max(var(--edge),env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-end;gap:18px;color:#b7b6af;font:10px var(--mono);line-height:1.5;z-index:4;pointer-events:none;text-shadow:0 1px 5px #000,0 0 8px #000}
-body[data-view=home] .site-footer{display:none}
+body[data-view=home] .site-footer,body[data-view=about]:not([data-about-story=true]) .site-footer{display:none}
 body[data-view=projects] .site-footer::before{content:'';position:absolute;inset:-20px calc(var(--edge) * -1) -30px;z-index:-1;background:linear-gradient(transparent,#000)}
 body[data-view=about][data-about-story=true] .site-footer{position:relative;inset:auto;margin:0 max(var(--edge),env(safe-area-inset-right)) 0 max(var(--edge),env(safe-area-inset-left));padding:24px 0 max(24px,calc(env(safe-area-inset-bottom) + 12px))}
 body[data-view=about][data-about-story=true] .about-content{padding-bottom:48px}
@@ -193,18 +193,14 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
  /* Explicit geometry keeps the video and poster aligned on mobile Safari. */
  .about-hero .scene-video,.about-hero .scene-poster{width:100%;height:calc(100vw * 16 / 9);aspect-ratio:auto;inset:auto;left:var(--artwork-shift-x,0px);top:calc(50% - 100vw * 8 / 9);transform:none;object-fit:contain;object-position:50% 50%}
 }
-/* Retain the tablet landing's browser-bar scrolling independently of phones. */
-@media(pointer:coarse) and (min-width:760px) and (max-width:1050px) and (min-height:501px){
- body[data-view=home]{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:auto;min-height:calc(100lvh + 180px)}
- body[data-view=home] .home-scene{position:fixed;left:0;right:0;width:100%}
-}
-/* Use the full, stable browser height for the original phone movie. Sizing it
-   to visualViewport.height ends the artwork above Safari's floating toolbar.
-   Only controls are inset; native document scrolling carries the entire hero
-   away before the project screens, without a fixed movie spilling into them. */
+/* Keep the supplied full-screen movie separate from the project pager.
+   Its large viewport geometry stays stable beneath floating phone controls. */
 html[data-phone-landing=true]{scroll-snap-type:none;scroll-padding:0}
-html[data-phone-landing=true] body[data-view]{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:auto;min-height:0}
-html[data-phone-landing=true] .home-scene{--phone-controls-inset:max(0px,calc(100lvh - var(--phone-controls-bottom,100dvh)));position:relative;top:0;height:100vh;height:100lvh;min-height:0;overflow:hidden;isolation:isolate}
+html[data-phone-landing=true] body[data-view]{overflow-x:hidden;min-height:0}
+html[data-phone-landing=true] body[data-view=home]{height:100svh;overflow:hidden;overscroll-behavior:none}
+html[data-phone-landing=true] body[data-view=home] main{height:100svh}
+html[data-phone-landing=true] body[data-view=projects]{overflow-y:auto;overscroll-behavior-y:none}
+html[data-phone-landing=true] .home-scene{--phone-controls-inset:max(0px,calc(100lvh - var(--phone-controls-bottom,100dvh)));position:fixed;left:0;right:0;top:0;height:100vh;height:100lvh;min-height:0;overflow:hidden;isolation:isolate}
 html[data-phone-landing=true] .home-scene .animation-frame,
 html[data-phone-landing=true] .home-sparks{position:absolute;inset:0;width:100%;height:100%}
 html[data-phone-landing=true] .projects-scene{position:relative;z-index:2;padding:0;height:auto;min-height:0;overflow:visible;overscroll-behavior:auto;background:#000}
@@ -214,14 +210,15 @@ html[data-phone-landing=true] .home-scene .animation-toggle.has-label{bottom:cal
 .phone-project-dots{display:none}
 /* Leave room for native scrollbars so a dot tap reaches the button itself. */
 html[data-phone-landing=true] body[data-view=projects] .phone-project-dots{position:fixed;z-index:4;right:max(12px,calc(env(safe-area-inset-right) + 12px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column}
-.phone-project-dots button{display:grid;place-items:center;width:24px;height:36px;padding:0;border:0;background:none}
+.phone-project-dots button{display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;background:none}
 .phone-project-dots button>span{width:5px;height:5px;border-radius:50%;background:#626269;transition:background .2s,transform .2s}
 .phone-project-dots button[aria-current=true]>span{background:#fff;transform:scale(1.5)}
 .phone-project-dots button:focus-visible{outline-offset:-2px}
 html[data-phone-landing=true] .projects-intro,
 html[data-phone-landing=true] .project-stage{display:none}
 html[data-phone-landing=true] .phone-projects{display:block}
-html[data-phone-landing=true] .site-footer{display:flex;position:relative;inset:auto;margin:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));padding:24px 0 max(24px,calc(env(safe-area-inset-bottom) + 12px))}
+html[data-phone-landing=true] body[data-view=projects] .site-footer{display:none;position:relative;inset:auto;margin:0 max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));padding:24px 0 max(24px,calc(env(safe-area-inset-bottom) + 12px))}
+html[data-phone-landing=true] body[data-view=projects][data-phone-project-last=true] .site-footer{display:flex}
 html[data-phone-landing=true] .site-footer::before{display:none}
 .phone-project-panel{position:relative;min-height:100svh;display:flex;align-items:center;padding:max(100px,calc(env(safe-area-inset-top) + 76px)) max(36px,calc(env(safe-area-inset-right) + 36px)) max(36px,calc(env(safe-area-inset-bottom) + 24px)) max(36px,calc(env(safe-area-inset-left) + 36px));background:#000}
 .phone-project-card{display:block;flex:none;min-width:0;width:100%;max-width:390px;margin:0 auto}

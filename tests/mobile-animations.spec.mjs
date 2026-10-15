@@ -235,9 +235,7 @@ test('phone toolbar height changes keep the complete animation filling the curre
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
     expect(await page.evaluate(()=>window.metadataReloads)).toBe(0);
     expect(await page.evaluate(()=>scrollY)).toBe(0);
-    if(await page.evaluate(()=>matchMedia('(pointer:coarse)').matches)){
-      expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBeGreaterThan(height);
-    }else expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
+    expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
   }
 });
 

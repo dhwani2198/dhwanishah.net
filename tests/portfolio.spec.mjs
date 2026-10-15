@@ -3,23 +3,22 @@ import {projectPreview,openProject} from './helpers/project-preview.mjs';
 const projects=['tally','sprint-x','curalink','architectural-design'];
 test.beforeEach(async({page})=>{await page.emulateMedia({reducedMotion:'reduce'});});
 
-test('phones scroll from the landing into Projects while desktop keeps one landing screen',async({page,isMobile})=>{
+test('landing stays isolated until View projects is clicked on phone and desktop',async({page,isMobile,browserName})=>{
   await page.goto('/');
-  await expect(page.locator('#home-scene')).toBeVisible();
-  await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
-  await expect(page.locator('#local-time')).toContainText('My local time —');
-  if(!isMobile)await page.mouse.wheel(0,1800);
-  else await page.evaluate(()=>window.scrollTo(0,1800));
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  if(isMobile&&browserName==='webkit')await page.evaluate(()=>scrollTo({top:1800,behavior:'instant'}));
+  else await page.mouse.wheel(0,1800);
   await page.keyboard.press('PageDown');
   await page.keyboard.press('End');
-  if(isMobile){
-    expect(await page.evaluate(()=>window.scrollY)).toBeGreaterThan(0);
-    await expect(page).toHaveURL(/#projects$/);
-    await expect(page.locator('#projects-scene')).toBeVisible();
-    expect(await page.locator('#projects-scene').evaluate(n=>getComputedStyle(n).overflowY)).toBe('visible');
-  }else expect(await page.evaluate(()=>window.scrollY)).toBe(0);
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(!isMobile);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#home-scene')).toBeVisible();
+  await expect(page.locator('#projects-scene')).toBeHidden();
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(await page.evaluate(()=>innerHeight));
+  await page.getByRole('link',{name:'View projects',exact:true}).click();
+  await expect(page).toHaveURL(/#projects$/);
+  await expect(page.locator('#home-scene')).toBeHidden();
+  await expect(page.locator('#projects-scene')).toBeVisible();
 });
 
 test('project arrow opens published previews in the appropriate phone or desktop layout',async({page,isMobile})=>{
@@ -118,7 +117,7 @@ test('About keeps the published biography, artwork, credentials, and contact lin
   await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Projects',exact:true}).click();
   await expect(page).toHaveURL(/#projects$/);
   await expect(page.locator('#projects-scene')).toBeVisible();
-  expect(await page.evaluate(()=>window.scrollY)).toBe(isMobile?await page.locator('#home-scene').evaluate(n=>n.offsetHeight):0);
+  expect(await page.evaluate(()=>window.scrollY)).toBe(0);
 });
 
 test('published Blog and Resume links open separately',async({page})=>{
@@ -175,7 +174,7 @@ test('tablet and landscape use the supplied compositions with the correct native
   await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-tablet.webp');
   await page.setViewportSize({width:844,height:390});
   await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-desktop.webp');
-  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(!isMobile);
+  expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);
 });
 
 test('About plays its original 4K animation and pauses when the biography is visible',async({page})=>{
@@ -208,7 +207,7 @@ test('About centers the visible artwork across desktop, tablet, phone, and orien
     await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain(`/media/about-${layout.variant}.mp4`);
     const nav=await page.locator('.site-nav').boundingBox();
     for(const media of [video,page.locator('.about-hero .scene-poster')]){
-      const art=await media.evaluate((node,layout)=>{
+      const artwork=()=>media.evaluate((node,layout)=>{
         const box=node.getBoundingClientRect();
         const scale=Math.min(box.width/layout.sourceWidth,box.height/layout.sourceHeight);
         const x=box.x+(box.width-layout.sourceWidth*scale)/2;
@@ -216,7 +215,10 @@ test('About centers the visible artwork across desktop, tablet, phone, and orien
         const [left,top,right,bottom]=layout.bounds;
         return {left:x+left*scale,right:x+right*scale,top:y+top*scale,bottom:y+bottom*scale};
       },layout);
-      expect((art.left+art.right)/2).toBeCloseTo(layout.width/2,1);
+      // A same-source resize can complete before its resize event updates the
+      // centering offset. Wait for that layout work before measuring bounds.
+      await expect.poll(async()=>{const art=await artwork();return (art.left+art.right)/2;}).toBeCloseTo(layout.width/2,1);
+      const art=await artwork();
       expect(art.left).toBeGreaterThanOrEqual(0);
       expect(art.right).toBeLessThanOrEqual(layout.width);
       expect(art.top).toBeGreaterThan(nav.y+nav.height);

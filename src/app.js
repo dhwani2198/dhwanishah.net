@@ -1,7 +1,7 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-phone-project-cards-16';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-separate-phone-screens-17';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -23,13 +23,74 @@ const connector = document.querySelector('.preview-connector');
 const phonePanels=[...document.querySelectorAll('.phone-project-panel')];
 const phoneProjectDots=[...document.querySelectorAll('[data-phone-project-target]')];
 let phoneProjectIndex=0;
-function phoneProjectTop(){return Math.round((phonePanels[phoneProjectIndex]||scenes.projects).getBoundingClientRect().top+scrollY);}
 function updatePhoneProjectDots(){
   phoneProjectDots.forEach((dot,index)=>{
     if(index===phoneProjectIndex)dot.setAttribute('aria-current','true');
     else dot.removeAttribute('aria-current');
   });
 }
+function showPhoneProject(index,{resetScroll=true}={}){
+  phoneProjectIndex=Math.max(0,Math.min(projects.length-1,index));
+  phonePanels.forEach((panel,i)=>{panel.hidden=i!==phoneProjectIndex;});
+  document.body.dataset.phoneProjectLast=String(phoneProjectIndex===projects.length-1);
+  updatePhoneProjectDots();
+  if(resetScroll)window.scrollTo({top:0,behavior:'instant'});
+}
+function phoneProjectsActive(){
+  return document.documentElement.dataset.phoneLanding==='true'&&currentView==='projects'&&!dialog.open&&Math.abs((visualViewport?.scale||1)-1)<.01;
+}
+function projectScrollEdges(){
+  return {top:scrollY<=2,bottom:scrollY+innerHeight>=document.documentElement.scrollHeight-2};
+}
+function canPageProject(direction,edges=projectScrollEdges()){
+  return direction>0?edges.bottom&&phoneProjectIndex<projects.length-1:edges.top&&phoneProjectIndex>0;
+}
+// A swipe pages once. Native scrolling remains available inside a tall card;
+// reaching its edge requires a new gesture before changing projects.
+let projectSwipe=null;
+const phoneCards=document.querySelector('.phone-projects');
+phoneCards.addEventListener('touchstart',event=>{
+  if(!phoneProjectsActive()||event.touches.length!==1){projectSwipe=null;return;}
+  const finger=event.touches[0];
+  projectSwipe={x:finger.clientX,y:finger.clientY,edges:projectScrollEdges()};
+},{passive:true});
+phoneCards.addEventListener('touchmove',event=>{
+  if(!projectSwipe||event.touches.length!==1){projectSwipe=null;return;}
+  const finger=event.touches[0],dy=projectSwipe.y-finger.clientY,dx=projectSwipe.x-finger.clientX;
+  if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)*1.25&&canPageProject(Math.sign(dy),projectSwipe.edges))event.preventDefault();
+},{passive:false});
+phoneCards.addEventListener('touchend',event=>{
+  const gesture=projectSwipe;
+  projectSwipe=null;
+  if(!gesture||!phoneProjectsActive()||event.touches.length||event.changedTouches.length!==1)return;
+  const finger=event.changedTouches[0],dy=gesture.y-finger.clientY,dx=gesture.x-finger.clientX;
+  if(Math.abs(dy)<48||Math.abs(dy)<Math.abs(dx)*1.25||!canPageProject(Math.sign(dy),gesture.edges))return;
+  event.preventDefault();
+  showPhoneProject(phoneProjectIndex+Math.sign(dy));
+},{passive:false});
+phoneCards.addEventListener('touchcancel',()=>{projectSwipe=null;},{passive:true});
+let wheelDistance=0,wheelDirection=0,wheelPaged=false,wheelReset,wheelEdges=null;
+scenes.projects.addEventListener('wheel',event=>{
+  if(!phoneProjectsActive()||event.ctrlKey||Math.abs(event.deltaX)>Math.abs(event.deltaY)||!event.deltaY)return;
+  clearTimeout(wheelReset);
+  wheelReset=setTimeout(()=>{wheelDistance=0;wheelDirection=0;wheelPaged=false;wheelEdges=null;},200);
+  wheelEdges ||= projectScrollEdges();
+  if(wheelPaged){event.preventDefault();return;}
+  const direction=Math.sign(event.deltaY);
+  if(!canPageProject(direction,wheelEdges))return;
+  event.preventDefault();
+  if(direction!==wheelDirection)wheelDistance=0;
+  wheelDirection=direction;
+  wheelDistance+=Math.abs(event.deltaY)*(event.deltaMode===1?16:event.deltaMode===2?innerHeight:1);
+  if(wheelDistance>=40){wheelPaged=true;showPhoneProject(phoneProjectIndex+direction);}
+},{passive:false});
+addEventListener('keydown',event=>{
+  if(!phoneProjectsActive()||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey)return;
+  const direction=['ArrowDown','PageDown'].includes(event.key)?1:['ArrowUp','PageUp'].includes(event.key)?-1:0;
+  if(!direction||!canPageProject(direction))return;
+  event.preventDefault();
+  showPhoneProject(phoneProjectIndex+direction);
+});
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const touch = matchMedia('(hover: none)');
 const sparks=Object.fromEntries(['home','about'].map(name=>[
@@ -129,7 +190,7 @@ function routeState() {
   const project=projects.find(project=>`/${project.id}`===path);
   return {project,story:path==='/about'&&location.hash==='#about-story',view:project?'projects':path==='/about'?'about':location.hash==='#projects'?'projects':'home'};
 }
-function renderLocation({focus=false,preserveScroll=false}={}) {
+function renderLocation({focus=false}={}) {
   const {view,project,story}=routeState();
   const changedView=currentView!==view;
   const changedStory=document.body.dataset.aboutStory!==String(story);
@@ -141,7 +202,8 @@ function renderLocation({focus=false,preserveScroll=false}={}) {
   document.body.dataset.aboutStory=String(story);
   document.querySelector('.about-hero').hidden=story;
   document.getElementById('about-story').hidden=!story;
-  for(const [name,scene] of Object.entries(scenes))scene.hidden=phoneFlow&&name!=='about'?false:name!==view;
+  for(const [name,scene] of Object.entries(scenes))scene.hidden=name!==view;
+  showPhoneProject(project?projects.indexOf(project):phoneProjectIndex,{resetScroll:false});
   document.querySelector('.home-link').hidden=view==='home';
   document.querySelectorAll('[data-nav]').forEach(link=> {
     if(link.dataset.nav===view)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
@@ -150,8 +212,8 @@ function renderLocation({focus=false,preserveScroll=false}={}) {
   const canonical=project?`/${project.id}`:view==='about'?'/about':'/';
   document.querySelector('link[rel="canonical"]').href=`https://dhwanishah.net${canonical}`;
   document.querySelector('meta[name="description"]').content=project?.description||'Dhwani Shah — product design, AI workflows, and architectural design.';
-  if(!preserveScroll&&(changedView||changedStory||leavingProject||focus)){
-    window.scrollTo({top:phoneFlow&&view==='projects'?phoneProjectTop():0,behavior:'instant'});
+  if(changedView||changedStory||leavingProject||focus){
+    window.scrollTo({top:0,behavior:'instant'});
   }
   if(project) {
     phoneProjectIndex=projects.indexOf(project);
@@ -193,13 +255,7 @@ function renderLocation({focus=false,preserveScroll=false}={}) {
 }
 function navigate(href) {
   const url=new URL(href,location.href);
-  if(document.documentElement.dataset.phoneLanding==='true'&&!dialog.open&&url.pathname==='/'&&['','#projects'].includes(url.hash)){
-    if(url.hash==='#projects')phoneProjectIndex=0;
-    if(url.pathname+url.hash!==location.pathname+location.hash)history.pushState(null,'',url.pathname+url.hash);
-    renderLocation({focus:true,preserveScroll:true});
-    window.scrollTo({top:url.hash==='#projects'?phoneProjectTop():0,behavior:reducedMotion.matches?'instant':'smooth'});
-    return;
-  }
+  if(url.pathname==='/'&&url.hash==='#projects'&&!dialog.open)phoneProjectIndex=0;
   if(url.pathname===location.pathname && url.hash===location.hash) {
     renderLocation({focus:true});return;
   }
@@ -210,8 +266,7 @@ document.addEventListener('click',event=> {
   if(event.defaultPrevented || event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)return;
   const dot=event.target.closest('[data-phone-project-target]');
   if(dot&&document.documentElement.dataset.phoneLanding==='true'){
-    phoneProjectIndex=projects.findIndex(project=>project.id===dot.dataset.phoneProjectTarget);
-    window.scrollTo({top:phoneProjectTop(),behavior:reducedMotion.matches?'instant':'smooth'});
+    showPhoneProject(projects.findIndex(project=>project.id===dot.dataset.phoneProjectTarget));
     return;
   }
   const link=event.target.closest('a[data-route],a[data-project]');
@@ -227,30 +282,6 @@ document.addEventListener('click',event=> {
 addEventListener('popstate',()=>renderLocation());
 addEventListener('hashchange',()=>renderLocation());
 phoneLanding.addEventListener('change',()=>renderLocation({focus:true}));
-let landingScrollFrame=0;
-function syncPhoneScroll(){
-  if(document.documentElement.dataset.phoneLanding!=='true'||dialog.open||landingScrollFrame)return;
-  landingScrollFrame=requestAnimationFrame(()=>{
-    landingScrollFrame=0;
-    if(document.documentElement.dataset.phoneLanding!=='true'||dialog.open)return;
-    const viewportHeight=visualViewport?.height||innerHeight;
-    const center=(visualViewport?.offsetTop||0)+viewportHeight/2;
-    let nearest=Infinity;
-    phonePanels.forEach((panel,index)=>{
-      const box=panel.getBoundingClientRect();
-      const distance=Math.abs(box.top+box.height/2-center);
-      if(distance<nearest){nearest=distance;phoneProjectIndex=index;}
-    });
-    updatePhoneProjectDots();
-    const view=scenes.projects.getBoundingClientRect().top<=viewportHeight*.45?'projects':'home';
-    if(view===currentView)return;
-    history.replaceState(null,'',view==='projects'?'/#projects':'/');
-    renderLocation({preserveScroll:true});
-  });
-}
-addEventListener('scroll',syncPhoneScroll,{passive:true});
-addEventListener('resize',syncPhoneScroll);
-visualViewport?.addEventListener('resize',syncPhoneScroll);
 addEventListener('resize',()=>{drawConnector();updatePlayback();});
 document.fonts.ready.then(drawConnector);
 

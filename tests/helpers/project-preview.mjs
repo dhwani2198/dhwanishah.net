@@ -5,7 +5,8 @@ export async function projectPreview(page,id,{hover=false}={}) {
   const phone=await page.evaluate(()=>document.documentElement.dataset.phoneLanding==='true');
   if(phone){
     const panel=page.locator(`.phone-project-panel[data-phone-project="${id}"]`);
-    await panel.evaluate(n=>scrollTo({top:Math.round(n.getBoundingClientRect().top+scrollY),behavior:'instant'}));
+    await page.locator(`[data-phone-project-target="${id}"]`).click();
+    await expect(panel).toBeVisible();
     await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
     return {phone,panel,card:panel.locator('.phone-project-card'),image:panel.locator('img'),copy:panel.locator('.phone-card-copy'),link:panel.locator('.phone-project-card')};
   }

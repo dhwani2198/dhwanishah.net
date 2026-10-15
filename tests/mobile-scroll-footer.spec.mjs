@@ -39,141 +39,166 @@ test('About clock and copyright appear after the contact links at the page botto
   await expect(footer).toContainText('© 2025 Dhwani Shah');
   await expect(footer).toHaveCSS('position','relative');
   await page.locator('.about-back').click();
-  await expect(footer).toHaveCSS('position','fixed');
+  await expect(footer).toBeHidden();
 });
 
-test('phone swipes and the homepage arrow reach Projects in the same native document',async({page,isMobile})=>{
-  test.skip(!isMobile,'Native phone layout.');
+async function swipe(page,direction,selector='.phone-projects'){
+  return page.locator(selector).evaluate((surface,direction)=>{
+    const start={clientX:160,clientY:direction>0?420:160};
+    const end={clientX:160,clientY:direction>0?160:420};
+    let intercepted=false;
+    for(const [type,finger] of [['touchstart',start],['touchmove',end],['touchend',end]]){
+      const event=new Event(type,{bubbles:true,cancelable:true});
+      Object.defineProperties(event,{touches:{value:type==='touchend'?[]:[finger]},changedTouches:{value:[finger]}});
+      surface.dispatchEvent(event);
+      intercepted ||= event.defaultPrevented;
+    }
+    return intercepted;
+  },direction);
+}
+
+const currentDot=page=>page.locator('.phone-project-dots [aria-current="true"]');
+
+test('phone homepage requires the project button and each swipe changes exactly one card',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone project pager.');
   await page.setViewportSize({width:393,height:844});
   await page.goto('/');
   const video=page.locator('#home-scene video');
   await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1&&v.videoHeight===3840),{timeout:20000}).toBe(true);
-  expect(await page.locator('#projects-scene').evaluate(n=>n.offsetTop)).toBe(844);
-  expect(await page.locator('#home-scene .animation-frame').evaluate(n=>getComputedStyle(n).position)).toBe('absolute');
-  await expect(page.locator('.phone-project-panel')).toHaveCount(5);
-  await expect(page.locator('.project-stage')).not.toBeVisible();
-  await page.evaluate(()=>scrollTo({top:844,behavior:'instant'}));
-  await expect(page).toHaveURL(/#projects$/);
-  await expect(page.locator('#projects-scene')).toHaveCSS('overflow-y','visible');
-  await expect(page.locator('body')).toHaveAttribute('data-view','projects');
-  await page.getByRole('link',{name:'Return to the homepage'}).click();
+  await swipe(page,1,'#home-scene');
+  await page.evaluate(()=>scrollTo({top:1800,behavior:'instant'}));
+  await page.keyboard.press('PageDown');
   await expect(page).toHaveURL(/\/$/);
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
-  await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
-  await page.getByRole('link',{name:'View projects',exact:true}).click();
-  await expect(page).toHaveURL(/#projects$/);
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(844);
-  const tally=await projectPreview(page,'tally');
-  const footer=await page.locator('.site-footer').boundingBox();
-  const card=await tally.card.boundingBox();
-  expect(footer.y).toBeGreaterThan(card.y+card.height+15);
-  // The hero and its spark canvas have left the viewport completely.
-  for(const selector of ['#home-scene video','.home-sparks']){
-    const bounds=await page.locator(selector).boundingBox();
-    expect(bounds.y+bounds.height).toBeLessThanOrEqual(0);
-  }
-  await tally.image.tap();
-  await expect(page.locator('#project-viewer')).toBeVisible();
+  await expect(page.locator('#projects-scene')).toBeHidden();
+  await expect(page.locator('.site-footer')).toBeHidden();
   expect(await page.evaluate(()=>scrollY)).toBe(0);
-  await page.goBack();
-  await expect(page.locator('#project-viewer')).not.toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(1688);
-  await page.goForward();
-  await expect(page.locator('#project-viewer')).toBeVisible();
-  await page.getByRole('button',{name:'Close project viewer'}).click();
-  await expect(page.locator('#project-viewer')).not.toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(1688);
-  await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
-  await expect(page).toHaveURL(/\/$/);
+  await page.getByRole('link',{name:'View projects',exact:true}).tap();
+  await expect(page).toHaveURL(/#projects$/);
+  await expect(page.locator('#home-scene')).toBeHidden();
+  await expect(page.locator('.phone-project-panel:visible')).toHaveCount(1);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','topnotch');
+  for(const id of ['tally','sprint-x','curalink','architectural-design']){
+    expect(await swipe(page,1)).toBe(true);
+    await expect(currentDot(page)).toHaveAttribute('data-phone-project-target',id);
+    await expect(page.locator('.phone-project-panel:visible')).toHaveCount(1);
+    await expect(page.locator(`.phone-project-panel[data-phone-project="${id}"]`)).toBeVisible();
+    expect(await page.evaluate(()=>scrollY)).toBe(0);
+  }
+  // End boundaries never take the user into another section.
+  expect(await swipe(page,1)).toBe(false);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','architectural-design');
+  expect(await swipe(page,-1)).toBe(true);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','curalink');
+  await page.getByRole('link',{name:'Return to the homepage'}).tap();
+  await expect(page.locator('#home-scene')).toBeVisible();
+  await expect(page.locator('#projects-scene')).toBeHidden();
   await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
 });
 
-test('phone toolbar changes do not shift cards or interrupt a partial scroll',async({page,isMobile})=>{
-  test.skip(!isMobile,'Phone browser controls.');
-  const {readFile}=await import('node:fs/promises');
-  const css=await readFile(new URL('../src/styles.css',import.meta.url),'utf8');
-  // Keep the large/small viewport fixed while only the dynamic viewport changes,
-  // as happens when Safari or Chrome hides its floating controls.
-  await page.route('**/src/styles.css*',route=>route.fulfill({contentType:'text/css',body:css.replaceAll('100dvh','var(--test-dynamic-height,100svh)')}));
+test('a wheel gesture advances one phone project despite momentum events',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone project pager.');
   await page.setViewportSize({width:393,height:844});
   await page.goto('/#projects');
   await expect(page.locator('#local-time')).toContainText(/\d/);
-  const offsets=()=>page.locator('.phone-project-panel').evaluateAll(panels=>panels.map(n=>n.offsetTop));
-  const before=await offsets();
-  const partial=await page.locator('.phone-project-panel').nth(1).evaluate(n=>n.getBoundingClientRect().top+scrollY+137);
-  await page.evaluate(top=>scrollTo({top,behavior:'instant'}),partial);
-  const settled=await page.evaluate(()=>scrollY);
-  for(const height of [641,740,844,641]){
-    await page.evaluate(height=>{
-      document.documentElement.style.setProperty('--test-dynamic-height',`${height}px`);
-      dispatchEvent(new Event('resize'));
-    },height);
-    await expect.poll(offsets).toEqual(before);
-    await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(settled);
-    expect(await page.locator('#home-scene').evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
-  }
+  const wheel=deltaY=>page.locator('#projects-scene').dispatchEvent('wheel',{deltaY,bubbles:true,cancelable:true});
+  for(let i=0;i<4;i++)await wheel(600);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','tally');
+  await page.waitForTimeout(250);
+  await wheel(600);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','sprint-x');
+  await page.waitForTimeout(250);
+  await wheel(-600);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','tally');
 });
 
-test('phone dots follow unequal card heights and jump to the selected project',async({page,isMobile})=>{
-  test.skip(!isMobile,'Sequential phone project cards.');
-  await page.emulateMedia({reducedMotion:'no-preference'});
+test('a tall phone card scrolls fully before a new gesture changes projects',async({page,isMobile})=>{
+  test.skip(!isMobile,'Small phone project pager.');
   await page.setViewportSize({width:320,height:568});
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  await page.evaluate(()=>document.fonts.ready);
+  const panel=page.locator('.phone-project-panel:visible');
+  expect((await panel.boundingBox()).height).toBeGreaterThan(568);
+  expect(await swipe(page,1)).toBe(false);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','topnotch');
+  await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+  const open=await panel.locator('.phone-card-open').boundingBox();
+  expect(open.y+open.height).toBeLessThanOrEqual(569);
+  expect(await swipe(page,1)).toBe(true);
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','tally');
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
+});
+
+test('compact phone dots select one card and project history restores the same card',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone project pager.');
   await page.goto('/#projects');
   await expect(page.locator('#local-time')).toContainText(/\d/);
   const dots=page.getByRole('navigation',{name:'Project position'});
   await expect(dots.getByRole('button')).toHaveCount(5);
-  const heights=await page.locator('.phone-project-panel').evaluateAll(p=>p.map(n=>n.offsetHeight));
-  expect(new Set(heights).size).toBeGreaterThan(1);
-  for(const id of ['tally','sprint-x','curalink','architectural-design']){
-    const preview=await projectPreview(page,id);
-    const active=dots.locator('[aria-current="true"]');
-    await expect(active).toHaveCount(1);
-    await expect(active).toHaveAttribute('data-phone-project-target',id);
-    // A partial swipe stays where the user leaves it, without forced snapping.
-    await page.evaluate(()=>scrollBy({top:37,behavior:'instant'}));
-    const top=await page.evaluate(()=>scrollY);
-    await page.waitForTimeout(150);
-    expect(await page.evaluate(()=>scrollY)).toBe(top);
-    await expect(active).toHaveAttribute('data-phone-project-target',id);
-    expect((await preview.panel.boundingBox()).y).toBeCloseTo(-37,0);
-  }
+  expect((await dots.boundingBox()).height).toBeLessThanOrEqual(120);
   await dots.getByRole('button',{name:'Show CuraLink, project 4 of 5'}).tap();
-  const curalink=page.locator('.phone-project-panel[data-phone-project="curalink"]');
-  await expect.poll(()=>curalink.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
-  await expect(dots.locator('[aria-current="true"]')).toHaveAttribute('data-phone-project-target','curalink');
-  await curalink.locator('.phone-card-copy p').tap();
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','curalink');
+  await expect(page.locator('.phone-project-panel:visible')).toHaveCount(1);
+  await page.locator('[data-phone-project="curalink"] .phone-card-copy p').tap();
   await expect(page.locator('#project-viewer')).toBeVisible();
   await expect(dots).toBeHidden();
+  await page.goBack();
+  await expect(page.locator('#project-viewer')).toBeHidden();
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','curalink');
+  await page.goForward();
+  await expect(page.locator('#project-viewer')).toBeVisible();
   await page.getByRole('button',{name:'Close project viewer'}).click();
-  await expect.poll(()=>curalink.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
-  await expect(dots.locator('[aria-current="true"]')).toHaveAttribute('data-phone-project-target','curalink');
-  await page.getByRole('link',{name:'Return to the homepage'}).click();
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
-  await expect(dots).toBeHidden();
+  await expect(page.locator('#project-viewer')).toBeHidden();
+  await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','curalink');
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
 });
 
-test('the homepage has no overlaid clock and phones show one footer after the last project',async({page,isMobile})=>{
+test('phone toolbar changes preserve the selected card and its content scroll',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone browser controls.');
+  const {readFile}=await import('node:fs/promises');
+  const css=await readFile(new URL('../src/styles.css',import.meta.url),'utf8');
+  await page.route('**/src/styles.css*',route=>route.fulfill({contentType:'text/css',body:css.replaceAll('100dvh','var(--test-dynamic-height,100svh)')}));
+  await page.setViewportSize({width:320,height:568});
+  await page.goto('/#projects');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  await page.evaluate(()=>document.fonts.ready);
+  const panel=page.locator('.phone-project-panel:visible');
+  const height=(await panel.boundingBox()).height;
+  await page.evaluate(()=>scrollTo({top:37,behavior:'instant'}));
+  for(const visibleHeight of [440,500,568,440]){
+    await page.evaluate(height=>{
+      document.documentElement.style.setProperty('--test-dynamic-height',`${height}px`);
+      dispatchEvent(new Event('resize'));
+    },visibleHeight);
+    expect((await panel.boundingBox()).height).toBe(height);
+    expect(await page.evaluate(()=>scrollY)).toBe(37);
+    await expect(currentDot(page)).toHaveAttribute('data-phone-project-target','topnotch');
+    await expect(page.locator('.phone-project-panel:visible')).toHaveCount(1);
+  }
+});
+
+test('phone footer appears only after the last project and About footer only after the biography',async({page,isMobile})=>{
+  test.skip(!isMobile,'Phone project footer.');
   await page.goto('/');
   await expect(page.locator('#local-time')).toContainText(/\d/);
   const footer=page.locator('.site-footer');
-  await expect(page.locator('#home-scene footer,.phone-project-panel footer')).toHaveCount(0);
-  await expect(page.locator('footer')).toHaveCount(1);
-  if(!isMobile){
-    await expect(footer).toBeHidden();
-    return;
-  }
-  const height=await page.evaluate(()=>innerHeight);
-  expect((await footer.boundingBox()).y).toBeGreaterThan(height);
+  await expect(footer).toBeHidden();
+  await page.getByRole('link',{name:'View projects',exact:true}).tap();
+  await expect(footer).toBeHidden();
+  await page.getByRole('button',{name:'Show Architectural Design, project 5 of 5'}).tap();
   await expect(footer).toHaveCSS('position','relative');
   await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
-  await expect.poll(()=>footer.evaluate(n=>n.getBoundingClientRect().bottom)).toBeLessThanOrEqual(height+1);
-  const lastCard=await page.locator('.phone-project-panel').last().locator('.phone-project-card').boundingBox();
-  const lastPanel=await page.locator('.phone-project-panel').last().boundingBox();
+  const lastCard=await page.locator('.phone-project-panel:visible .phone-project-card').boundingBox();
   const bottom=await footer.boundingBox();
-  expect(bottom.y).toBeGreaterThanOrEqual(lastPanel.y+lastPanel.height);
   expect(bottom.y).toBeGreaterThan(lastCard.y+lastCard.height+20);
-  await expect(footer).toContainText('© 2025 Dhwani Shah');
-  await page.getByRole('link',{name:'Return to the homepage'}).click();
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
-  expect((await footer.boundingBox()).y).toBeGreaterThan(height);
+  expect(bottom.y+bottom.height).toBeLessThanOrEqual(await page.evaluate(()=>innerHeight)+1);
+  await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'About',exact:true}).tap();
+  await expect(footer).toBeHidden();
+  await page.locator('.about-read').tap();
+  await expect(footer).toHaveCSS('position','relative');
+  await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+  const contact=await page.locator('.contact-links').boundingBox();
+  expect((await footer.boundingBox()).y).toBeGreaterThan(contact.y+contact.height+20);
+  await page.locator('.about-back').tap();
+  await expect(footer).toBeHidden();
 });

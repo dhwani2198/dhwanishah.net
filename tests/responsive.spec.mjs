@@ -39,8 +39,7 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
   await fitsWidth(page);
   expect(Math.abs((await page.locator('#home-scene').boundingBox()).height-height)).toBeLessThan(1);
   const touch=await page.evaluate(()=>matchMedia('(pointer:coarse)').matches);
-  if(touch&&width<=1050)expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBeGreaterThan(height);
-  else expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
+  expect(await page.evaluate(()=>document.documentElement.scrollHeight)).toBe(height);
   if(touch)for(const link of await page.locator('.site-nav>a').all())expect((await link.boundingBox()).height).toBeGreaterThanOrEqual(44);
   await loadedImage(page.locator('#home-scene .scene-poster'));
   expect(await page.locator('#home-scene .scene-poster').evaluate(n=>Math.max(n.naturalWidth,n.naturalHeight))).toBe(3840);
@@ -77,9 +76,9 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
     expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);
     if(preview.phone){
       const nav=await page.locator('.site-nav').boundingBox();
-      const footer=await page.locator('.site-footer').boundingBox();
       expect(bounds.y).toBeGreaterThan(nav.y+nav.height);
-      expect(footer.y).toBeGreaterThan(bounds.y+bounds.height+10);
+      await expect(page.locator('.phone-project-panel:visible')).toHaveCount(1);
+      if(id!=='architectural-design')await expect(page.locator('.site-footer')).toBeHidden();
       const panel=await preview.panel.boundingBox();
       expect(bounds.y+bounds.height).toBeLessThanOrEqual(panel.y+panel.height);
       // Short phones scroll the complete card in the document, without clipping
