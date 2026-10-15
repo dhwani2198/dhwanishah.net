@@ -187,7 +187,7 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
 @media(max-height:700px) and (max-width:759px){.preview-panel{max-width:clamp(240px,39svh,440px)}.projects-scene{padding-top:max(90px,calc(env(safe-area-inset-top) + 76px))}.projects-intro{margin-bottom:15px}.project-stage{gap:15px}.project-name{font-size:27px}.preview-description{font-size:8px}.preview-tags{display:none}.preview-open{margin-top:7px;padding-top:7px}.preview-details{padding:10px}.scene{min-height:360px}}
 /* Preserve the entire supplied phone homepage composition at every screen ratio. */
 @media(max-width:759px) and (orientation:portrait){
- .scene.home-scene{background:#0b0711;height:var(--phone-hero-height,100svh);top:0}
+ .scene.home-scene{background:#0b0711;height:var(--phone-hero-height,100dvh);top:0}
  /* Explicit geometry keeps the video and poster aligned on mobile Safari. */
  .about-hero .scene-video,.about-hero .scene-poster{width:100%;height:calc(100vw * 16 / 9);aspect-ratio:auto;inset:auto;left:var(--artwork-shift-x,0px);top:calc(50% - 100vw * 8 / 9);transform:none;object-fit:contain;object-position:50% 50%}
 }
@@ -197,13 +197,13 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
  body[data-view=home]{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:auto;min-height:calc(100lvh + 180px)}
  body[data-view=home] .home-scene{position:fixed;left:0;right:0;width:100%}
 }
-/* A stable, full-height phone hero followed by the actual Projects section.
-   Native page scrolling collapses browser controls without rescaling the movie. */
+/* Keep the complete phone frame inside the current visible viewport. The
+   animation remains part of its section as native scrolling reaches Projects. */
 html[data-phone-landing=true]{scroll-snap-type:y mandatory;scroll-padding:0}
 html[data-phone-landing=true] body[data-view]{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:auto;min-height:0}
-html[data-phone-landing=true] .home-scene{position:relative;top:0;height:var(--phone-hero-height,100svh);min-height:0;scroll-snap-align:start;overflow:hidden;isolation:isolate}
+html[data-phone-landing=true] .home-scene{position:relative;top:0;height:var(--phone-hero-height,100dvh);min-height:0;scroll-snap-align:start;overflow:hidden;isolation:isolate}
 html[data-phone-landing=true] .home-scene .animation-frame,
-html[data-phone-landing=true] .home-sparks{position:absolute;inset:0;width:100%;height:100%}
+html[data-phone-landing=true] .home-sparks{position:absolute;inset:var(--phone-art-top,0px) 0 auto;width:100%;height:var(--phone-art-height,100%)}
 html[data-phone-landing=true] .projects-scene{position:relative;z-index:2;padding:0;height:auto;min-height:0;overflow:visible;overscroll-behavior:auto;background:#000}
 html[data-phone-landing=true] .project-trigger{top:auto;bottom:max(82px,calc(env(safe-area-inset-bottom) + 65px))}
 .phone-projects,.phone-panel-footer{display:none}

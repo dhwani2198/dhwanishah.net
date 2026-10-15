@@ -221,16 +221,16 @@ for(const [width,height] of [[320,568],[393,641],[390,664],[430,932]])test(`port
   }
 });
 
-test('phone toolbar height changes preserve the initial composition and playback',async({page,isMobile})=>{
+test('phone toolbar height changes keep the complete animation filling the current screen',async({page})=>{
   await page.setViewportSize({width:393,height:641});
   await page.goto('/');
   const video=page.locator('#home-scene video');
   await expect.poll(()=>video.evaluate(v=>v.currentTime),{timeout:20000}).toBeGreaterThan(.1);
   await video.evaluate(v=>{window.metadataReloads=0;v.addEventListener('loadedmetadata',()=>window.metadataReloads++);});
-  for(const height of [740,641]){
+  for(const height of [740,844,641]){
     const before=await video.evaluate(v=>v.currentTime);
     await page.setViewportSize({width:393,height});
-    await expect.poll(()=>page.locator('#home-scene').evaluate(n=>n.getBoundingClientRect().height)).toBe(isMobile?641:height);
+    await expect.poll(()=>page.locator('#home-scene').evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(height,1);
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
     expect(await page.evaluate(()=>window.metadataReloads)).toBe(0);
     expect(await page.evaluate(()=>scrollY)).toBe(0);
@@ -240,7 +240,7 @@ test('phone toolbar height changes preserve the initial composition and playback
   }
 });
 
-test('phone toolbar-only changes keep the whole initial visible movie stable',async({page,isMobile})=>{
+test('phone toolbar-only changes fit the whole movie between the visible top and bottom edges',async({page,isMobile})=>{
   await page.setViewportSize({width:393,height:844});
   await page.addInitScript(()=>{
     // Reproduce separate layout and visible areas, as with phone toolbars.
@@ -262,15 +262,16 @@ test('phone toolbar-only changes keep the whole initial visible movie stable',as
     v.addEventListener('loadedmetadata',()=>window.metadataReloads++);
     window.addEventListener('resize',()=>window.windowResizes++);
   });
-  for(const [height,top,event] of [[641,32,'resize'],[740,0,'resize'],[641,48,'scroll'],[641,0,'resize']]){
+  for(const [height,top,event] of [[641,32,'resize'],[740,0,'resize'],[844,0,'resize'],[641,48,'scroll'],[641,0,'resize']]){
     const before=await video.evaluate(v=>v.currentTime);
     await page.evaluate(([height,top,event])=>window.setPhoneVisibleArea(height,top,1,event),[height,top,event]);
     for(const media of [video,scene.locator('.scene-poster')]){
+      await expect.poll(()=>media.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(isMobile?height:844,1);
       const box=await media.boundingBox();
       expect(box.x).toBeCloseTo(0,1);
       expect(box.width).toBeCloseTo(393,1);
-      expect(box.y).toBeCloseTo(0,1);
-      expect(box.height).toBeCloseTo(isMobile?641:844,1);
+      expect(box.y).toBeCloseTo(isMobile?top:0,1);
+      expect(box.y+box.height).toBeCloseTo(isMobile?top+height:844,1);
       expect(await media.evaluate(n=>getComputedStyle(n).objectFit)).toBe('fill');
     }
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);

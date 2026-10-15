@@ -3,20 +3,27 @@
 const touch = matchMedia('(hover: none)');
 const dialog = document.getElementById('project-viewer');
 const phoneScreen=matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
-let phoneWidth=0;
-// Fit the entire authored frame to the area actually visible on first load.
-// Keep that composition stable while browser controls collapse; only a new
-// screen width (rotation) changes it. The hero scrolls away with its section.
+// Match the visible phone viewport on first load and as browser controls move.
+// Safari can offset that viewport inside the layout viewport: include the
+// offset so neither end of the original frame falls outside the visible area.
 function sizePhoneHero() {
-  if(!phoneScreen.matches){phoneWidth=0;document.documentElement.style.removeProperty('--phone-hero-height');return;}
+  const style=document.documentElement.style;
+  if(!phoneScreen.matches){
+    for(const name of ['--phone-hero-height','--phone-art-height','--phone-art-top'])style.removeProperty(name);
+    return;
+  }
   if(Math.abs((visualViewport?.scale||1)-1)>.01)return;
-  const width=Math.round(visualViewport?.width||innerWidth);
-  if(width===phoneWidth)return;
-  phoneWidth=width;
-  document.documentElement.style.setProperty('--phone-hero-height',`${visualViewport?.height||innerHeight}px`);
+  const height=visualViewport?.height||innerHeight;
+  const top=Math.max(0,visualViewport?.offsetTop||0);
+  style.setProperty('--phone-hero-height',`${top+height}px`);
+  style.setProperty('--phone-art-height',`${height}px`);
+  style.setProperty('--phone-art-top',`${top}px`);
 }
 sizePhoneHero();
 addEventListener('resize',sizePhoneHero);
+addEventListener('pageshow',sizePhoneHero);
+visualViewport?.addEventListener('resize',sizePhoneHero);
+visualViewport?.addEventListener('scroll',sizePhoneHero);
 phoneScreen.addEventListener('change',sizePhoneHero);
 
 export function animationVariant() {

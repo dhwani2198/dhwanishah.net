@@ -62,7 +62,7 @@ test('phone swipes and the homepage arrow reach Projects in the same native docu
   await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
   await page.getByRole('link',{name:'View projects',exact:true}).click();
   await expect(page).toHaveURL(/#projects$/);
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(0);
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(844);
   const tally=await projectPreview(page,'tally');
   const footer=await tally.panel.locator('.phone-panel-footer').boundingBox();
   const card=await tally.card.boundingBox();
@@ -88,7 +88,7 @@ test('phone swipes and the homepage arrow reach Projects in the same native docu
   await expect.poll(()=>video.evaluate(v=>!v.paused)).toBe(true);
 });
 
-test('project screens fill the visible area after phone controls collapse without resizing the authored hero',async({page,isMobile})=>{
+test('the hero and project screens fill the available area after phone controls collapse',async({page,isMobile})=>{
   test.skip(!isMobile,'Phone browser controls.');
   await page.setViewportSize({width:393,height:641});
   await page.goto('/');
@@ -102,11 +102,16 @@ test('project screens fill the visible area after phone controls collapse withou
   const panel=page.locator('.phone-project-panel[data-phone-project="topnotch"]');
   await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
   await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
-  expect((await hero.boundingBox()).height).toBe(641);
+  await expect.poll(()=>hero.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
   const footer=await panel.locator('.phone-panel-footer').boundingBox();
   const card=await panel.locator('.phone-project-card').boundingBox();
   expect(footer.y).toBeGreaterThan(card.y+card.height+15);
   expect(footer.y+footer.height).toBeLessThanOrEqual(844);
   const movie=await hero.locator('video').boundingBox();
   expect(movie.y+movie.height).toBeLessThanOrEqual(0);
+  await page.getByRole('link',{name:'Return to the homepage'}).click();
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+  const homeVideo=await hero.locator('video').boundingBox();
+  expect(homeVideo.y).toBe(0);
+  expect(homeVideo.height).toBe(844);
 });
