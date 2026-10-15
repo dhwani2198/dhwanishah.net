@@ -65,7 +65,7 @@ test('touch taps create brief sparks only on Home and About animation pages',asy
   await page.touchscreen.tap(170,350);
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBeGreaterThan(0);
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBe(0);
-  // A tap near the footer, outside the artwork, also produces sparks.
+  // Taps near the bottom edge also produce sparks.
   await page.touchscreen.tap(170,await page.evaluate(()=>innerHeight-24));
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBeGreaterThan(0);
   await expect.poll(()=>sparkPixels(page,'.home-sparks')).toBe(0);
@@ -240,10 +240,11 @@ test('phone toolbar height changes keep the complete animation filling the curre
   }
 });
 
-test('phone toolbar-only changes fit the whole movie between the visible top and bottom edges',async({page,isMobile})=>{
+test('phone toolbar-only changes inset the controls without shortening the original animation',async({page,isMobile})=>{
   await page.setViewportSize({width:393,height:844});
   await page.addInitScript(()=>{
-    // Reproduce separate layout and visible areas, as with phone toolbars.
+    // Safari's floating bars reduce visualViewport without reducing 100lvh.
+    // The movie must extend beyond that smaller area, like the About document.
     const viewport=new EventTarget();
     Object.assign(viewport,{width:393,height:641,offsetTop:32,offsetLeft:0,scale:1});
     Object.defineProperty(window,'visualViewport',{configurable:true,value:viewport});
@@ -266,13 +267,17 @@ test('phone toolbar-only changes fit the whole movie between the visible top and
     const before=await video.evaluate(v=>v.currentTime);
     await page.evaluate(([height,top,event])=>window.setPhoneVisibleArea(height,top,1,event),[height,top,event]);
     for(const media of [video,scene.locator('.scene-poster')]){
-      await expect.poll(()=>media.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(isMobile?height:844,1);
+      await expect.poll(()=>media.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
       const box=await media.boundingBox();
       expect(box.x).toBeCloseTo(0,1);
       expect(box.width).toBeCloseTo(393,1);
-      expect(box.y).toBeCloseTo(isMobile?top:0,1);
-      expect(box.y+box.height).toBeCloseTo(isMobile?top+height:844,1);
+      expect(box.y).toBeCloseTo(0,1);
+      expect(box.y+box.height).toBeCloseTo(844,1);
       expect(await media.evaluate(n=>getComputedStyle(n).objectFit)).toBe('fill');
+    }
+    if(isMobile){
+      const arrow=await scene.locator('.project-trigger').boundingBox();
+      expect(arrow.y+arrow.height).toBeCloseTo(top+height-82,1);
     }
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
     expect(await video.evaluate(v=>v.currentSrc)).toBe(source);
@@ -281,7 +286,7 @@ test('phone toolbar-only changes fit the whole movie between the visible top and
   expect(await page.evaluate(()=>window.windowResizes)).toBe(0);
   // A user's deliberate pinch zoom still enlarges the normal layout.
   await page.evaluate(()=>window.setPhoneVisibleArea(320,0,2,'resize'));
-  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(isMobile?641:844,1);
+  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
   await page.evaluate(()=>window.setPhoneVisibleArea(641,0,1,'resize'));
-  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(isMobile?641:844,1);
+  await expect.poll(()=>scene.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
 });

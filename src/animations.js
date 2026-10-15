@@ -3,28 +3,25 @@
 const touch = matchMedia('(hover: none)');
 const dialog = document.getElementById('project-viewer');
 const phoneScreen=matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
-// Match the visible phone viewport on first load and as browser controls move.
-// Safari can offset that viewport inside the layout viewport: include the
-// offset so neither end of the original frame falls outside the visible area.
-function sizePhoneHero() {
+// Only the controls follow Safari's visible area. The original movie fills
+// the stable 100lvh section in CSS, including beneath floating browser bars.
+function placePhoneControls() {
   const style=document.documentElement.style;
   if(!phoneScreen.matches){
-    for(const name of ['--phone-hero-height','--phone-art-height','--phone-art-top'])style.removeProperty(name);
+    style.removeProperty('--phone-controls-bottom');
     return;
   }
   if(Math.abs((visualViewport?.scale||1)-1)>.01)return;
   const height=visualViewport?.height||innerHeight;
   const top=Math.max(0,visualViewport?.offsetTop||0);
-  style.setProperty('--phone-hero-height',`${top+height}px`);
-  style.setProperty('--phone-art-height',`${height}px`);
-  style.setProperty('--phone-art-top',`${top}px`);
+  style.setProperty('--phone-controls-bottom',`${top+height}px`);
 }
-sizePhoneHero();
-addEventListener('resize',sizePhoneHero);
-addEventListener('pageshow',sizePhoneHero);
-visualViewport?.addEventListener('resize',sizePhoneHero);
-visualViewport?.addEventListener('scroll',sizePhoneHero);
-phoneScreen.addEventListener('change',sizePhoneHero);
+placePhoneControls();
+addEventListener('resize',placePhoneControls);
+addEventListener('pageshow',placePhoneControls);
+visualViewport?.addEventListener('resize',placePhoneControls);
+visualViewport?.addEventListener('scroll',placePhoneControls);
+phoneScreen.addEventListener('change',placePhoneControls);
 
 export function animationVariant() {
   if (innerWidth < 760 && innerHeight > innerWidth) return 'phone';

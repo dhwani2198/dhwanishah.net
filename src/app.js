@@ -1,7 +1,7 @@
 import { renderArticle } from './render.mjs';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-visible-phone-frame-12';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-full-height-phone-13';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -40,7 +40,6 @@ function tick() {
   const clock = document.getElementById('local-time');
   clock.textContent = formatLocalTime(now);
   clock.dateTime = now.toISOString();
-  document.querySelectorAll('[data-local-time]').forEach(time=>{time.textContent=clock.textContent;time.dateTime=clock.dateTime;});
 }
 tick();
 setInterval(tick,1000);

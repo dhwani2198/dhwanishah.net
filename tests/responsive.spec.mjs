@@ -77,10 +77,10 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
     expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);
     if(preview.phone){
       const nav=await page.locator('.site-nav').boundingBox();
-      const footer=await preview.panel.locator('.phone-panel-footer').boundingBox();
+      const footer=await page.locator('.site-footer').boundingBox();
       expect(bounds.y).toBeGreaterThan(nav.y+nav.height);
       expect(footer.y).toBeGreaterThan(bounds.y+bounds.height+10);
-      expect(footer.y+footer.height).toBeLessThanOrEqual(height);
+      expect(bounds.y+bounds.height).toBeLessThanOrEqual(height);
       const proportions=await preview.image.evaluate(n=>({display:n.width/n.height,native:n.naturalWidth/n.naturalHeight}));
       expect(proportions.display).toBeCloseTo(id==='topnotch'?1:proportions.native,1);
       await preview.card.click();

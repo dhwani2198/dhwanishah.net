@@ -64,7 +64,7 @@ test('phone swipes and the homepage arrow reach Projects in the same native docu
   await expect(page).toHaveURL(/#projects$/);
   await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(844);
   const tally=await projectPreview(page,'tally');
-  const footer=await tally.panel.locator('.phone-panel-footer').boundingBox();
+  const footer=await page.locator('.site-footer').boundingBox();
   const card=await tally.card.boundingBox();
   expect(footer.y).toBeGreaterThan(card.y+card.height+15);
   // The hero and its spark canvas have left the viewport completely.
@@ -103,15 +103,41 @@ test('the hero and project screens fill the available area after phone controls 
   await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
   await expect.poll(()=>panel.evaluate(n=>n.getBoundingClientRect().top)).toBeCloseTo(0,0);
   await expect.poll(()=>hero.evaluate(n=>n.getBoundingClientRect().height)).toBeCloseTo(844,1);
-  const footer=await panel.locator('.phone-panel-footer').boundingBox();
+  const footer=await page.locator('.site-footer').boundingBox();
   const card=await panel.locator('.phone-project-card').boundingBox();
   expect(footer.y).toBeGreaterThan(card.y+card.height+15);
-  expect(footer.y+footer.height).toBeLessThanOrEqual(844);
+  expect(footer.y).toBeGreaterThan(844);
   const movie=await hero.locator('video').boundingBox();
   expect(movie.y+movie.height).toBeLessThanOrEqual(0);
   await page.getByRole('link',{name:'Return to the homepage'}).click();
   await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
   const homeVideo=await hero.locator('video').boundingBox();
   expect(homeVideo.y).toBe(0);
-  expect(homeVideo.height).toBe(844);
+  expect(homeVideo.height).toBeCloseTo(844,1);
+});
+
+test('the homepage has no overlaid clock and phones show one footer after the last project',async({page,isMobile})=>{
+  await page.goto('/');
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+  const footer=page.locator('.site-footer');
+  await expect(page.locator('#home-scene footer,.phone-project-panel footer')).toHaveCount(0);
+  await expect(page.locator('footer')).toHaveCount(1);
+  if(!isMobile){
+    await expect(footer).toBeHidden();
+    return;
+  }
+  const height=await page.evaluate(()=>innerHeight);
+  expect((await footer.boundingBox()).y).toBeGreaterThan(height);
+  await expect(footer).toHaveCSS('position','relative');
+  await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+  await expect.poll(()=>footer.evaluate(n=>n.getBoundingClientRect().bottom)).toBeLessThanOrEqual(height);
+  const lastCard=await page.locator('.phone-project-panel').last().locator('.phone-project-card').boundingBox();
+  const lastPanel=await page.locator('.phone-project-panel').last().boundingBox();
+  const bottom=await footer.boundingBox();
+  expect(bottom.y).toBeGreaterThanOrEqual(lastPanel.y+lastPanel.height);
+  expect(bottom.y).toBeGreaterThan(lastCard.y+lastCard.height+20);
+  await expect(footer).toContainText('© 2025 Dhwani Shah');
+  await page.getByRole('link',{name:'Return to the homepage'}).click();
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+  expect((await footer.boundingBox()).y).toBeGreaterThan(height);
 });
