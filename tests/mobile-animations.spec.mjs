@@ -240,7 +240,7 @@ test('phone toolbar height changes keep the complete animation filling the curre
   }
 });
 
-test('phone toolbar-only changes keep the project button at the bottom of the full animation',async({page,isMobile})=>{
+test('phone toolbar-only changes keep the project button just above browser controls',async({page,isMobile})=>{
   await page.setViewportSize({width:393,height:844});
   await page.addInitScript(()=>{
     // Safari's floating bars reduce visualViewport without reducing 100lvh.
@@ -277,7 +277,7 @@ test('phone toolbar-only changes keep the project button at the bottom of the fu
     }
     if(isMobile){
       const arrow=await scene.locator('.project-trigger').boundingBox();
-      expect(arrow.y+arrow.height).toBeCloseTo(844-28,1);
+      expect(arrow.y+arrow.height).toBeCloseTo(top+height-16,1);
     }
     await expect.poll(()=>video.evaluate(v=>v.currentTime)).toBeGreaterThan(before+.1);
     expect(await video.evaluate(v=>v.currentSrc)).toBe(source);

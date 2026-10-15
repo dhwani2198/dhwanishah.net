@@ -207,7 +207,7 @@ html[data-phone-landing=true] .home-scene{--phone-controls-inset:max(0px,calc(10
 html[data-phone-landing=true] .home-scene .animation-frame,
 html[data-phone-landing=true] .home-sparks{position:absolute;inset:0;width:100%;height:100%}
 html[data-phone-landing=true] .projects-scene{position:relative;z-index:2;padding:0;height:auto;min-height:0;overflow:visible;overscroll-behavior:auto;background:#000}
-html[data-phone-landing=true] .project-trigger{top:auto;bottom:max(28px,calc(env(safe-area-inset-bottom) + 12px))}
+html[data-phone-landing=true] .project-trigger{top:auto;bottom:calc(var(--phone-controls-inset) + 16px)}
 html[data-phone-landing=true] .home-scene .animation-toggle.has-label{bottom:calc(var(--phone-controls-inset) + max(145px,calc(env(safe-area-inset-bottom) + 123px)))}
 .phone-projects{display:none}
 html[data-phone-landing=true] .projects-intro,

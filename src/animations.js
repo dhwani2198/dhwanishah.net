@@ -3,7 +3,7 @@
 const touch = matchMedia('(hover: none)');
 const dialog = document.getElementById('project-viewer');
 const phoneScreen=matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
-// Only the playback retry control follows Safari's visible area. The movie fills
+// The project pill and playback retry follow Safari's visible area. The movie fills
 // the stable 100lvh section in CSS, including beneath floating browser bars.
 function placePhoneControls() {
   const style=document.documentElement.style;
