@@ -393,7 +393,7 @@ test('reduced motion suppresses automatic cursor trails',async({page})=> {
 });
 
 
-test('TopNotch is coming soon with its published preview, working card, and project switching',async({page,isMobile})=>{
+test('TopNotch is coming soon with its published preview, working card, and project switching',async({page,isMobile,browserName})=>{
   await page.goto('/#projects');
   const preview=await projectPreview(page,'topnotch',{hover:!isMobile});
   const link=preview.link;
@@ -421,10 +421,23 @@ test('TopNotch is coming soon with its published preview, working card, and proj
   expect(await teaserImage.evaluate(n=>getComputedStyle(n).objectPosition.split(' ').map(value=>Math.round(parseFloat(value)*10)/10))).toEqual([65.4,65.7]);
   const teaserBounds=await teaserImage.boundingBox();
   expect(Math.abs(teaserBounds.width-teaserBounds.height)).toBeLessThan(1);
-  await expect(page.locator('.project-teaser a')).toHaveCount(0);
-  const storeStatus=page.getByText('App Store — coming soon',{exact:true});
-  await expect(storeStatus).toBeVisible();
-  await storeStatus.click();
+  const storeUrl='https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12';
+  const storeLink=page.getByRole('link',{name:'View on the App Store'});
+  await expect(storeLink).toBeVisible();
+  await expect(storeLink).toHaveAttribute('href',storeUrl);
+  await expect(storeLink).toHaveAttribute('target','_blank');
+  await expect(storeLink).toHaveAttribute('rel','noopener');
+  await expect(page.locator('.project-teaser a[href*="dhwani.framer.ai"]')).toHaveCount(0);
+  if(browserName==='webkit'){
+    // WebKit hands apps.apple.com links to the OS without creating a browser tab.
+    await storeLink.click();
+  }else{
+    await page.context().route(storeUrl,route=>route.fulfill({contentType:'text/html',body:'<title>TopNotch App Store destination</title>'}));
+    const [storePage]=await Promise.all([page.waitForEvent('popup'),storeLink.click()]);
+    await expect(storePage).toHaveURL(storeUrl);
+    await storePage.close();
+    await page.context().unroute(storeUrl);
+  }
   await expect(page).toHaveURL(/\/topnotch$/);
   expect(page.context().pages()).toHaveLength(1);
   await page.locator('.project-tabs [data-project="tally"]').click();
@@ -438,5 +451,5 @@ test('TopNotch is coming soon with its published preview, working card, and proj
   await page.reload();
   await expect(page.locator('#case-title')).toHaveText('TopNotch');
   await expect(page.locator('.project-teaser')).toBeVisible();
-  await expect(page.locator('.project-teaser a')).toHaveCount(0);
+  await expect(storeLink).toHaveAttribute('href',storeUrl);
 });
