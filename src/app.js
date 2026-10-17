@@ -1,7 +1,7 @@
-import { renderArticle } from './render.mjs';
+import { renderArticle } from './render.mjs?v=20261016-topnotch-store-coming-soon-20';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261014-bidirectional-project-paging-19';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261016-topnotch-store-coming-soon-20';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');

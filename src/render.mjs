@@ -17,7 +17,7 @@ export function renderMedia(item, title, index = 0) {
 }
 
 export function renderArticle(project) {
-  if (project.status === 'coming-soon') return `<article class="case-article project-teaser" data-article="${escape(project.id)}"><div class="teaser-layout"><div class="teaser-intro"><span class="project-status">Coming soon</span><h1 id="case-title">${escape(project.title)}</h1><p class="teaser-lead">${escape(project.lead)}</p><p class="teaser-description">${escape(project.description)}</p><div class="preview-tags">${project.tags.map(tag=>`<span>${escape(tag)}</span>`).join('')}</div></div><figure class="teaser-media"><img src="${escape(project.preview)}" alt="${escape(project.title)} — published app preview" decoding="async"></figure></div><div class="teaser-footer"><p>Case study coming soon.</p><a href="${escape(project.source)}" target="_blank" rel="noopener">View published preview ${renderArrow()}</a></div></article>`;
+  if (project.status === 'coming-soon') return `<article class="case-article project-teaser" data-article="${escape(project.id)}"><div class="teaser-layout"><div class="teaser-intro"><span class="project-status">Coming soon</span><h1 id="case-title">${escape(project.title)}</h1><p class="teaser-lead">${escape(project.lead)}</p><p class="teaser-description">${escape(project.description)}</p><div class="preview-tags">${project.tags.map(tag=>`<span>${escape(tag)}</span>`).join('')}</div></div><figure class="teaser-media"><img src="${escape(project.preview)}" alt="${escape(project.title)} — published app preview" decoding="async"></figure></div><div class="teaser-footer"><p>Case study coming soon.</p><span class="store-status">App Store — coming soon</span></div></article>`;
   return `<article class="case-article" data-article="${project.id}"><h1 id="case-title" class="sr-only">${escape(project.title)}</h1><iframe class="published-case" title="${escape(project.title)} published case study" src="${escape(project.caseStudy)}"></iframe></article>`;
 }
 
@@ -42,7 +42,7 @@ function renderProjectDots(projects) {
   return `<nav class="phone-project-dots" aria-label="Project position">${projects.map((p,i)=>`<button type="button" data-phone-project-target="${p.id}" aria-label="Show ${escape(p.title)}, project ${i+1} of ${projects.length}" ${i===0?'aria-current="true"':''}><span aria-hidden="true"></span></button>`).join('')}</nav>`;
 }
 
-const assetVersion='20261014-bidirectional-project-paging-19';
+const assetVersion='20261016-topnotch-store-coming-soon-20';
 function renderAnimation(name,initiallyActive) {
   const variants=[['phone','(max-width:759px) and (orientation:portrait)'],['tablet','(max-aspect-ratio:3/2)'],['desktop','']];
   const file=variant=>`${name}-${variant}`;

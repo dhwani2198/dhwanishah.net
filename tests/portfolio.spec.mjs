@@ -421,8 +421,12 @@ test('TopNotch is coming soon with its published preview, working card, and proj
   expect(await teaserImage.evaluate(n=>getComputedStyle(n).objectPosition.split(' ').map(value=>Math.round(parseFloat(value)*10)/10))).toEqual([65.4,65.7]);
   const teaserBounds=await teaserImage.boundingBox();
   expect(Math.abs(teaserBounds.width-teaserBounds.height)).toBeLessThan(1);
-  await expect(page.getByRole('link',{name:'View published preview'})).toHaveAttribute('href','https://dhwani.framer.ai/');
-  await expect(page.getByRole('link',{name:'View published preview'})).toHaveAttribute('target','_blank');
+  await expect(page.locator('.project-teaser a')).toHaveCount(0);
+  const storeStatus=page.getByText('App Store — coming soon',{exact:true});
+  await expect(storeStatus).toBeVisible();
+  await storeStatus.click();
+  await expect(page).toHaveURL(/\/topnotch$/);
+  expect(page.context().pages()).toHaveLength(1);
   await page.locator('.project-tabs [data-project="tally"]').click();
   await expect(page.locator('.published-case')).toBeVisible();
   await page.locator('.project-tabs [data-project="topnotch"]').click();
@@ -434,4 +438,5 @@ test('TopNotch is coming soon with its published preview, working card, and proj
   await page.reload();
   await expect(page.locator('#case-title')).toHaveText('TopNotch');
   await expect(page.locator('.project-teaser')).toBeVisible();
+  await expect(page.locator('.project-teaser a')).toHaveCount(0);
 });

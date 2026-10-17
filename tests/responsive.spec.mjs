@@ -104,7 +104,7 @@ for(const [name,width,height] of viewports)test(`${name}: every page and project
     expect(viewer.y+viewer.height).toBeLessThanOrEqual(height);
     if(touch)expect((await page.locator('.close-viewer').boundingBox()).height).toBeGreaterThanOrEqual(44);
     if(id==='topnotch'){
-      const source=page.getByRole('link',{name:'View published preview'});
+      const source=page.getByText('App Store — coming soon',{exact:true});
       await source.scrollIntoViewIfNeeded();
       await expect(source).toBeVisible();
       const reach=await source.boundingBox();
