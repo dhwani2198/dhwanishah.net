@@ -4,11 +4,9 @@
     "title": "TopNotch",
     "status": "live",
     "lead": "Less clutter. More focus.",
-    "description": "TopNotch turns the space around your MacBook notch or iPhone dynamic island into a focused home for your day.",
+    "description": "TopNotch turns the space around your MacBook notch into a focused home for your day.",
     "tags": [
-      "Calendar",
-      "Flexible integrations",
-      "Meeting prep"
+      "iOS version coming soon"
     ],
     "preview": "/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png",
     "illustration": "/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png",
@@ -25,6 +23,7 @@
     "detailImageDimensions": [
       2880,
       1800
-    ]
+    ],
+    "detailDescription": "A macOS app that brings your meetings right to your Mac’s notch. With a quick view of your daily calendar and one-tap meeting access, TopNotch helps reduce context switching and makes staying on top of your schedule feel effortless."
   }
 ]

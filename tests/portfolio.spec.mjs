@@ -417,7 +417,7 @@ test('TopNotch is Live with its published preview, App Store link, and project s
   await expect(page.locator('#case-title')).toHaveText('TopNotch');
   await expect(page.locator('.project-teaser .project-status')).toHaveText('Live');
   await expect(page.locator('.project-tabs [data-project="topnotch"] .project-status')).toHaveText('Live');
-  await expect(page.locator('.project-teaser')).not.toContainText(/coming soon/i);
+  await expect(page.locator('.project-teaser')).not.toContainText(/case study coming soon/i);
   await expect(page.locator('.project-teaser')).toContainText('Less clutter. More focus.');
   const teaserImage=page.locator('.teaser-media img');
   await expect(teaserImage).toHaveAttribute('src','/assets/images/topnotch-final-linkedin.png');
