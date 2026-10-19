@@ -7,6 +7,28 @@ const sparkPixels=(page,selector)=>page.locator(selector).evaluate(canvas=>{
   return painted;
 });
 
+for(const [name,width,height,videoWidth,videoHeight] of [
+  ['desktop',1440,900,3840,2160],['phone',393,844,2160,3840],['tablet',834,1194,3840,2880],
+])test(`${name} homepage reveals moving 4K frames before the app scripts arrive`,async({page})=>{
+  await page.setViewportSize({width,height});
+  let releaseScripts;
+  const scriptsWaiting=new Promise(resolve=>{releaseScripts=resolve;});
+  const projectImages=[];
+  page.on('request',request=>{if(request.url().includes('P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png'))projectImages.push(request.url());});
+  await page.route('**/src/app.js?*',async route=>{await scriptsWaiting;await route.continue();});
+  try{
+    await page.goto('/',{waitUntil:'commit'});
+    const video=page.locator('#home-scene video');
+    await expect.poll(()=>video.evaluate((v,[w,h])=>!v.paused&&v.currentTime>.1&&v.videoWidth===w&&v.videoHeight===h,[videoWidth,videoHeight]),{timeout:5000}).toBe(true);
+    await expect(page.locator('#home-scene .animation-frame')).toHaveClass(/is-playing/);
+    await expect(page.locator('#home-scene .scene-poster')).toHaveCSS('opacity','0');
+    await expect(page.locator('#home-scene .scene-poster')).toHaveCSS('transition-duration','0s');
+    await expect(page.locator('#local-time')).toHaveText('My local time —');
+    expect(projectImages).toEqual([]);
+  }finally{releaseScripts();}
+  await expect(page.locator('#local-time')).toContainText(/\d/);
+});
+
 test('blocked autoplay offers a working trusted-tap control for both 4K videos',async({page,isMobile})=>{
   await page.addInitScript(()=>{
     const play=HTMLMediaElement.prototype.play;
