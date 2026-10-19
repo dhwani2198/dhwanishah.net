@@ -7,6 +7,27 @@ const sparkPixels=(page,selector)=>page.locator(selector).evaluate(canvas=>{
   return painted;
 });
 
+test('cold homepage starts 4K playback promptly on a 10 Mbps connection',async({page,browserName,isMobile})=>{
+  test.skip(browserName!=='chromium'||isMobile,'Desktop CDP network throttling.');
+  const network=await page.context().newCDPSession(page);
+  await network.send('Network.enable');
+  await network.send('Network.setCacheDisabled',{cacheDisabled:true});
+  await network.send('Network.emulateNetworkConditions',{
+    offline:false,latency:80,downloadThroughput:1_250_000,uploadThroughput:125_000,
+  });
+  await page.addInitScript(()=>{
+    window.homeFirstPlaying=null;
+    document.addEventListener('playing',event=>{
+      if(event.target.matches?.('#home-scene video')&&window.homeFirstPlaying===null)
+        window.homeFirstPlaying=performance.now();
+    },true);
+  });
+  await page.goto('/',{waitUntil:'commit'});
+  await expect.poll(()=>page.evaluate(()=>window.homeFirstPlaying),{timeout:6000}).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.homeFirstPlaying)).toBeLessThan(3500);
+  expect(await page.locator('#home-scene video').evaluate(v=>[v.videoWidth,v.videoHeight])).toEqual([3840,2160]);
+});
+
 for(const [name,width,height,videoWidth,videoHeight] of [
   ['desktop',1440,900,3840,2160],['phone',393,844,2160,3840],['tablet',834,1194,3840,2880],
 ])test(`${name} homepage reveals moving 4K frames before the app scripts arrive`,async({page})=>{
@@ -192,8 +213,8 @@ for(const [width,height,variant,sourceWidth,sourceHeight] of [
   const video=page.locator('#home-scene video');
   await expect.poll(()=>video.evaluate(v=>[v.videoWidth,v.videoHeight]),{timeout:20000}).toEqual([sourceWidth,sourceHeight]);
   await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1)).toBe(true);
-  await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain(`/media/home-${variant}.mp4`);
-  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src',`/media/home-${variant}.webp`);
+  await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain(`/media/home-${variant}-playback.mp4`);
+  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src',`/media/home-${variant}-playback.webp`);
   expect(await page.locator('#home-scene .animation-frame').evaluate(n=>getComputedStyle(n).backgroundImage)).toBe('none');
   await page.locator('#home-scene .scene-poster').evaluate(n=>n.decode());
   for(const media of [video,page.locator('#home-scene .scene-poster')]){

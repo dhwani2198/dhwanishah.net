@@ -30,7 +30,7 @@ export function animationVariant() {
   return innerWidth / innerHeight <= 1.5 ? 'tablet' : 'desktop';
 }
 function mediaName(name, variant) {
-  return `${name}-${variant}`;
+  return `${name}-${variant}${name === 'home' ? '-playback' : ''}`;
 }
 // Center the illustration inside the original export's uneven empty margins.
 // These are the main artwork bounds; sparse star particles stay decorative.

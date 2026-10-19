@@ -47,13 +47,13 @@ function renderProjectDots(projects) {
   return `<nav class="phone-project-dots" aria-label="Project position">${projects.map((p,i)=>`<button type="button" data-phone-project-target="${p.id}" aria-label="Show ${escape(p.title)}, project ${i+1} of ${projects.length}" ${i===0?'aria-current="true"':''}><span aria-hidden="true"></span></button>`).join('')}</nav>`;
 }
 
-export const assetVersion='20261019-topnotch-desktop-31';
+export const assetVersion='20261019-home-playback-32';
 function renderAnimation(name,initiallyActive) {
   const variants=[['phone','(max-width:759px) and (orientation:portrait)'],['tablet','(max-aspect-ratio:3/2)'],['desktop','']];
-  const file=variant=>`${name}-${variant}`;
+  const file=variant=>`${name}-${variant}${name==='home'?'-playback':''}`;
   const sources=initiallyActive?variants.map(([variant,media])=>`<source src="/media/${file(variant)}.mp4" type="video/mp4" ${media?`media="${media}"`:''}>`).join(''):'';
   const description=name==='home'?'An animated ASCII valley under a starry sky':'An ASCII landscape tracing Dhwani Shah’s journey';
-  return `<div class="animation-frame" data-animation="${name}"><video class="scene-video" autoplay muted loop playsinline webkit-playsinline preload="${initiallyActive?'auto':'none'}" aria-label="${description}">${sources}</video><picture>${variants.filter(([,media])=>media).map(([variant,media])=>`<source srcset="/media/${file(variant)}.webp" media="${media}">`).join('')}<img class="scene-poster" src="/media/${name}-desktop.webp" alt="" aria-hidden="true" loading="${initiallyActive?'eager':'lazy'}" fetchpriority="low"></picture><button class="animation-toggle" type="button" aria-label="Pause animation" hidden>Ⅱ</button></div>${initiallyActive?`<script>{const frame=document.currentScript.previousElementSibling;const video=frame.querySelector('video');video.muted=true;video.defaultMuted=true;video.playsInline=true;video.addEventListener('playing',()=>{if(!video.paused)frame.classList.add('is-playing');});video.addEventListener('error',()=>frame.classList.remove('is-playing'));video.play().catch(()=>{});}</script>`:''}`;
+  return `<div class="animation-frame" data-animation="${name}"><video class="scene-video" autoplay muted loop playsinline webkit-playsinline preload="${initiallyActive?'auto':'none'}" aria-label="${description}">${sources}</video><picture>${variants.filter(([,media])=>media).map(([variant,media])=>`<source srcset="/media/${file(variant)}.webp" media="${media}">`).join('')}<img class="scene-poster" src="/media/${file('desktop')}.webp" alt="" aria-hidden="true" loading="${initiallyActive?'eager':'lazy'}" fetchpriority="low"></picture><button class="animation-toggle" type="button" aria-label="Pause animation" hidden>Ⅱ</button></div>${initiallyActive?`<script>{const frame=document.currentScript.previousElementSibling;const video=frame.querySelector('video');video.muted=true;video.defaultMuted=true;video.playsInline=true;video.addEventListener('playing',()=>{if(!video.paused)frame.classList.add('is-playing');});video.addEventListener('error',()=>frame.classList.remove('is-playing'));video.play().catch(()=>{});}</script>`:''}`;
 }
 
 export function renderPage(data, route = '/') {

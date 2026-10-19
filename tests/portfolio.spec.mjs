@@ -154,7 +154,7 @@ test('supplied 4K video plays and pauses when Projects opens',async({page,isMobi
   await page.goto('/');
   await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>Math.max(video.videoWidth,video.videoHeight)),{timeout:20000}).toBe(3840);
   await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>video.paused)).toBe(false);
-  await expect.poll(()=>page.locator('#home-scene video').evaluate(v=>v.currentSrc)).toContain(`/media/home-${isMobile?'phone':'desktop'}.mp4`);
+  await expect.poll(()=>page.locator('#home-scene video').evaluate(v=>v.currentSrc)).toContain(`/media/home-${isMobile?'phone':'desktop'}-playback.mp4`);
   await page.getByRole('link',{name:'View projects',exact:true}).click();
   await expect.poll(()=>page.locator('#home-scene video').evaluate(video=>video.paused)).toBe(true);
 });
@@ -171,9 +171,9 @@ test('video failure leaves a poster and usable navigation',async({page})=>{
 test('tablet and landscape use the supplied compositions with the correct native flow',async({page,isMobile})=>{
   await page.setViewportSize({width:1024,height:768});
   await page.goto('/');
-  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-tablet.webp');
+  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-tablet-playback.webp');
   await page.setViewportSize({width:844,height:390});
-  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-desktop.webp');
+  await expect(page.locator('#home-scene .scene-poster')).toHaveAttribute('src','/media/home-desktop-playback.webp');
   expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);
 });
 
