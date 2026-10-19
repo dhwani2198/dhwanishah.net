@@ -109,7 +109,7 @@ test('touch taps create brief sparks only on Home and About animation pages',asy
 for(const route of ['/','/about'])test(`first visit to ${route} autoplays 4K before content loads, without navigation`,async({page,isMobile})=>{
   let releaseContent;
   const waiting=new Promise(resolve=>{releaseContent=resolve;});
-  await page.route('**/content/published.json',async request=>{await waiting;await request.continue();});
+  await page.route('**/content/published.json*',async request=>{await waiting;await request.continue();});
   try {
     await page.goto(route,{waitUntil:'domcontentloaded'});
     const scene=page.locator(route==='/'?'#home-scene':'.about-hero');

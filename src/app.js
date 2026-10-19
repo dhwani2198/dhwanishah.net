@@ -1,7 +1,7 @@
-import { renderArticle, projectStatusLabel } from './render.mjs?v=20261019-topnotch-live-23';
+import { renderArticle, projectStatusLabel, assetVersion } from './render.mjs?v=20261019-topnotch-launch-24';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261019-topnotch-live-23';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261019-topnotch-launch-24';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -9,7 +9,7 @@ document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&docum
 // restoration must not pull Safari back to an older scroll position.
 history.scrollRestoration='manual';
 
-const data = await fetch('/content/published.json').then(response => {
+const data = await fetch(`/content/published.json?v=${assetVersion}`).then(response => {
   if (!response.ok) throw new Error('Could not load portfolio content');
   return response.json();
 });
