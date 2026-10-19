@@ -13,7 +13,7 @@ const preview='/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png';
 await mkdir(resolve(root,'public/assets/images'),{recursive:true});
 await writeFile(resolve(root,'public',preview.slice(1)),image);
 const project={
-  id:'topnotch',title:'TopNotch',status:'coming-soon',
+  id:'topnotch',title:'TopNotch',status:'live',
   lead:'Less clutter. More focus.',
   description:'TopNotch turns the space around your MacBook notch or iPhone dynamic island into a focused home for your day.',
   tags:['Calendar','Flexible integrations','Meeting prep'],

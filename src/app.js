@@ -1,7 +1,7 @@
-import { renderArticle } from './render.mjs?v=20261019-immediate-animation-22';
+import { renderArticle, projectStatusLabel } from './render.mjs?v=20261019-topnotch-live-23';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261019-immediate-animation-22';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261019-topnotch-live-23';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -158,13 +158,15 @@ function selectProject(id) {
   preview.hidden=false;
   preview.dataset.previewProject=id;
   preview.href=`/${id}`;
-  preview.setAttribute('aria-label',project.status==='coming-soon'?`Preview ${project.title} — coming soon`:`Open ${project.title} project`);
+  preview.setAttribute('aria-label',project.caseStudy?`Open ${project.title} project`:`Preview ${project.title}`);
   const image=preview.querySelector('.preview-original');
   image.src=project.preview;
   image.alt=`${project.title} — project preview`;
   preview.querySelector('h2').textContent=project.title;
-  preview.querySelector('.preview-status').hidden=project.status!=='coming-soon';
-  preview.querySelector('.preview-open-label').textContent=project.status==='coming-soon'?'View preview':'Open project';
+  preview.querySelector('.preview-status').textContent=projectStatusLabel(project);
+  preview.querySelector('.preview-status').dataset.status=project.status||'';
+  preview.querySelector('.preview-status').hidden=!projectStatusLabel(project);
+  preview.querySelector('.preview-open-label').textContent=project.caseStudy?'Open project':'View preview';
   preview.querySelector('.preview-description').textContent=project.description;
   preview.querySelector('.preview-tags').replaceChildren(...project.tags.map(tag=> {
     const span=document.createElement('span');span.textContent=tag;return span;

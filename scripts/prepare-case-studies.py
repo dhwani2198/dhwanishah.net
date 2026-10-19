@@ -56,7 +56,7 @@ def serialize(node):
     return opening if node.tag in VOID else opening + ''.join(serialize(c) for c in node.children) + f'</{node.tag}>'
 
 for project in data['projects']:
-    if project.get('status') == 'coming-soon':
+    if not project.get('caseStudy'):
         continue
     route = project['id']
     raw = (ROOT/'.reference/published'/f'{route}.html').read_text()

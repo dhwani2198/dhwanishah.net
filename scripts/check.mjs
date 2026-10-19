@@ -13,8 +13,8 @@ const provenance=JSON.parse(await readFile(resolve(root,'content/asset-provenanc
 assert.equal(data.publication,'b2371357950dc8c4b26cf29f14ae2f46aad85765');
 const additions=JSON.parse(await readFile(resolve(root,'content/additional-projects.json'),'utf8'));
 const previewOverrides=JSON.parse(await readFile(resolve(root,'content/preview-overrides.json'),'utf8'));
-assert.deepEqual(data.projects.filter(p=>p.status==='coming-soon'),additions);
-assert.deepEqual(data.projects.filter(p=>p.status!=='coming-soon').map(p=>p.id),['tally','sprint-x','curalink','architectural-design']);
+assert.deepEqual(data.projects.filter(p=>!p.caseStudy),additions);
+assert.deepEqual(data.projects.filter(p=>p.caseStudy).map(p=>p.id),['tally','sprint-x','curalink','architectural-design']);
 assert.equal(new Set(data.projects.map(p=>p.id)).size,data.projects.length);
 for(const entry of Object.values(provenance)) {
   const raw=await readFile(resolve(root,'public',entry.output.slice(1)));
@@ -42,7 +42,7 @@ for(const p of data.projects) {
     assert.equal(createHash('sha256').update(image).digest('hex'),p.previewSha256,'Keep the supplied preview bytes unchanged');
     assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20)],p.previewDimensions);
   }
-  if(p.status==='coming-soon') {
+  if(!p.caseStudy) {
     const image=await readFile(resolve(root,'public',p.preview.slice(1)));
     assert.equal(createHash('sha256').update(image).digest('hex'),p.previewSha256,'The new project preview must retain the original source bytes');
     assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20)],p.previewDimensions);

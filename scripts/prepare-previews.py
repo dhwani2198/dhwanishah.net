@@ -10,7 +10,7 @@ overrides = json.loads((ROOT/'content/preview-overrides.json').read_text())
 manifest = json.loads((ROOT/'content/asset-provenance.json').read_text())
 homepage = importer['Document']((ROOT/'.reference/published/index.html').read_text()).root
 for project in data['projects']:
-    if project.get('status') == 'coming-soon':
+    if not project.get('caseStudy'):
         continue
     if project['id'] in overrides:
         project.update(overrides[project['id']])

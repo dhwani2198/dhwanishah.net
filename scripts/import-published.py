@@ -177,7 +177,7 @@ def generate():
     (ROOT / 'content/published.json').write_text(json.dumps(output, ensure_ascii=False, indent=2) + '\n')
     (ROOT / 'content/asset-provenance.json').write_text(json.dumps(asset_manifest, indent=2) + '\n')
     for p in projects:
-        print(f'{p["title"]}: coming soon' if p.get('status') == 'coming-soon' else f'{p["title"]}: {len(p["blocks"])} content sections')
+        print(f'{p["title"]}: {len(p["blocks"])} content sections' if p.get('caseStudy') else f'{p["title"]}: {p.get("status", "preview")}')
     print(f'{len(asset_manifest)} assets verified against published Git blobs')
 
 if __name__ == '__main__':

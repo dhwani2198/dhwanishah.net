@@ -393,13 +393,13 @@ test('reduced motion suppresses automatic cursor trails',async({page})=> {
 });
 
 
-test('TopNotch is coming soon with its published preview, working card, and project switching',async({page,isMobile,browserName})=>{
+test('TopNotch is Live with its published preview, App Store link, and project switching',async({page,isMobile,browserName})=>{
   await page.goto('/#projects');
   const preview=await projectPreview(page,'topnotch',{hover:!isMobile});
   const link=preview.link;
   await expect(page.locator('.project-count')).toHaveText('01 — 05');
-  await expect(link.locator('.project-status')).toHaveText('Coming soon');
-  await expect(preview.card.locator('.project-status')).toBeVisible();
+  await expect(link.locator('.project-status')).toHaveText('Live');
+  await expect(preview.card.locator('.project-status')).toHaveText('Live');
   await expect(preview.card.locator('h2')).toHaveText('TopNotch');
   await expect(preview.card.locator(preview.phone?'.phone-card-open':'.preview-open-label')).toHaveText('View preview');
   const image=preview.image;
@@ -415,14 +415,16 @@ test('TopNotch is coming soon with its published preview, working card, and proj
   await expect(page).toHaveURL(/\/topnotch$/);
   await expect(page.locator('#project-viewer')).toBeVisible();
   await expect(page.locator('#case-title')).toHaveText('TopNotch');
-  await expect(page.locator('.project-teaser .project-status')).toHaveText('Coming soon');
+  await expect(page.locator('.project-teaser .project-status')).toHaveText('Live');
+  await expect(page.locator('.project-tabs [data-project="topnotch"] .project-status')).toHaveText('Live');
+  await expect(page.locator('.project-teaser')).not.toContainText(/coming soon/i);
   await expect(page.locator('.project-teaser')).toContainText('Less clutter. More focus.');
   const teaserImage=page.locator('.teaser-media img');
   expect(await teaserImage.evaluate(n=>getComputedStyle(n).objectPosition.split(' ').map(value=>Math.round(parseFloat(value)*10)/10))).toEqual([65.4,65.7]);
   const teaserBounds=await teaserImage.boundingBox();
   expect(Math.abs(teaserBounds.width-teaserBounds.height)).toBeLessThan(1);
   const storeUrl='https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12';
-  const storeLink=page.getByRole('link',{name:'View on the App Store'});
+  const storeLink=page.getByRole('link',{name:'Download on the App Store'});
   await expect(storeLink).toBeVisible();
   await expect(storeLink).toHaveAttribute('href',storeUrl);
   await expect(storeLink).toHaveAttribute('target','_blank');
