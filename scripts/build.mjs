@@ -9,7 +9,13 @@ const data = JSON.parse(await readFile(resolve(root,'content/published.json'), '
 const dist = resolve(root, 'dist');
 await rm(dist, {recursive:true, force:true});
 await mkdir(dist, {recursive:true});
-await cp(resolve(root,'public'), dist, {recursive:true});
+// Archive the verified masters in the repository. Ship smaller 4K copies under
+// both URL names so already-open tabs keep working within Pages' site size limit.
+const originals=JSON.parse(await readFile(resolve(root,'public/media/manifest.json'),'utf8'));
+const masterFiles=new Set(originals.map(video=>resolve(root,'public/media',`${video.name}.mp4`)));
+await cp(resolve(root,'public'), dist, {recursive:true,filter:path=>!masterFiles.has(path)});
+const playback=JSON.parse(await readFile(resolve(root,'public/media/playback-manifest.json'),'utf8'));
+for(const video of playback)await cp(resolve(dist,'media',video.file),resolve(dist,'media',video.source));
 await cp(resolve(root,'src'), resolve(dist,'src'), {recursive:true});
 await mkdir(resolve(dist,'content'));
 await cp(resolve(root,'content/published.json'), resolve(dist,'content/published.json'));

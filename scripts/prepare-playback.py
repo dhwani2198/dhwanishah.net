@@ -30,8 +30,6 @@ if __name__ == '__main__':
     entries = []
     originals = json.loads((MEDIA / 'manifest.json').read_text())
     for original in originals:
-        if not original['name'].startswith('home-'):
-            continue
         source = MEDIA / f"{original['name']}.mp4"
         output = MEDIA / f"{original['name']}-playback.mp4"
         poster = MEDIA / f"{original['name']}-playback.webp"

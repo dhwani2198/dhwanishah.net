@@ -7,7 +7,8 @@ const sparkPixels=(page,selector)=>page.locator(selector).evaluate(canvas=>{
   return painted;
 });
 
-test('cold homepage starts 4K playback promptly on a 10 Mbps connection',async({page,browserName,isMobile})=>{
+for(const [name,path,budget] of [['homepage','/',3500],['About','/about',3500]])
+test(`cold ${name} starts 4K playback promptly on a 10 Mbps connection`,async({page,browserName,isMobile})=>{
   test.skip(browserName!=='chromium'||isMobile,'Desktop CDP network throttling.');
   const network=await page.context().newCDPSession(page);
   await network.send('Network.enable');
@@ -16,21 +17,22 @@ test('cold homepage starts 4K playback promptly on a 10 Mbps connection',async({
     offline:false,latency:80,downloadThroughput:1_250_000,uploadThroughput:125_000,
   });
   await page.addInitScript(()=>{
-    window.homeFirstPlaying=null;
+    window.animationFirstPlaying=null;
     document.addEventListener('playing',event=>{
-      if(event.target.matches?.('#home-scene video')&&window.homeFirstPlaying===null)
-        window.homeFirstPlaying=performance.now();
+      if(event.target.matches?.('.scene-video')&&window.animationFirstPlaying===null)
+        window.animationFirstPlaying=performance.now();
     },true);
   });
-  await page.goto('/',{waitUntil:'commit'});
-  await expect.poll(()=>page.evaluate(()=>window.homeFirstPlaying),{timeout:6000}).toBeGreaterThan(0);
-  expect(await page.evaluate(()=>window.homeFirstPlaying)).toBeLessThan(3500);
-  expect(await page.locator('#home-scene video').evaluate(v=>[v.videoWidth,v.videoHeight])).toEqual([3840,2160]);
+  await page.goto(path,{waitUntil:'commit'});
+  await expect.poll(()=>page.evaluate(()=>window.animationFirstPlaying),{timeout:6000}).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.animationFirstPlaying)).toBeLessThan(budget);
+  expect(await page.locator('.scene-video:visible').evaluate(v=>[v.videoWidth,v.videoHeight])).toEqual([3840,2160]);
 });
 
+for(const [scene,route,label] of [['home','/','homepage'],['about','/about','About']])
 for(const [name,width,height,videoWidth,videoHeight] of [
   ['desktop',1440,900,3840,2160],['phone',393,844,2160,3840],['tablet',834,1194,3840,2880],
-])test(`${name} homepage reveals moving 4K frames before the app scripts arrive`,async({page})=>{
+])test(`${name} ${label} reveals moving 4K frames before the app scripts arrive`,async({page})=>{
   await page.setViewportSize({width,height});
   let releaseScripts;
   const scriptsWaiting=new Promise(resolve=>{releaseScripts=resolve;});
@@ -38,12 +40,13 @@ for(const [name,width,height,videoWidth,videoHeight] of [
   page.on('request',request=>{if(request.url().includes('P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png'))projectImages.push(request.url());});
   await page.route('**/src/app.js?*',async route=>{await scriptsWaiting;await route.continue();});
   try{
-    await page.goto('/',{waitUntil:'commit'});
-    const video=page.locator('#home-scene video');
+    await page.goto(route,{waitUntil:'commit'});
+    const frame=page.locator(`#${scene}-scene .animation-frame`);
+    const video=frame.locator('video');
     await expect.poll(()=>video.evaluate((v,[w,h])=>!v.paused&&v.currentTime>.1&&v.videoWidth===w&&v.videoHeight===h,[videoWidth,videoHeight]),{timeout:5000}).toBe(true);
-    await expect(page.locator('#home-scene .animation-frame')).toHaveClass(/is-playing/);
-    await expect(page.locator('#home-scene .scene-poster')).toHaveCSS('opacity','0');
-    await expect(page.locator('#home-scene .scene-poster')).toHaveCSS('transition-duration','0s');
+    await expect(frame).toHaveClass(/is-playing/);
+    await expect(frame.locator('.scene-poster')).toHaveCSS('opacity','0');
+    await expect(frame.locator('.scene-poster')).toHaveCSS('transition-duration','0s');
     await expect(page.locator('#local-time')).toHaveText('My local time —');
     expect(projectImages).toEqual([]);
   }finally{releaseScripts();}

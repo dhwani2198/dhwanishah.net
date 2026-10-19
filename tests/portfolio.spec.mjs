@@ -177,7 +177,7 @@ test('tablet and landscape use the supplied compositions with the correct native
   expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight)).toBe(true);
 });
 
-test('About plays its original 4K animation and pauses when the biography is visible',async({page})=>{
+test('About plays its 4K animation and pauses when the biography is visible',async({page})=>{
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.goto('/about');
   await expect.poll(()=>page.locator('#about-scene video').evaluate(video=>Math.max(video.videoWidth,video.videoHeight)),{timeout:20000}).toBe(3840);
@@ -204,7 +204,7 @@ test('About centers the visible artwork across desktop, tablet, phone, and orien
     await page.setViewportSize({width:layout.width,height:layout.height});
     await expect.poll(()=>video.evaluate(v=>[v.videoWidth,v.videoHeight]),{timeout:20000}).toEqual([layout.sourceWidth,layout.sourceHeight]);
     await expect.poll(()=>video.evaluate(v=>!v.paused&&v.currentTime>.1)).toBe(true);
-    await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain(`/media/about-${layout.variant}.mp4`);
+    await expect.poll(()=>video.evaluate(v=>v.currentSrc)).toContain(`/media/about-${layout.variant}-playback.mp4`);
     const nav=await page.locator('.site-nav').boundingBox();
     for(const media of [video,page.locator('.about-hero .scene-poster')]){
       const artwork=()=>media.evaluate((node,layout)=>{

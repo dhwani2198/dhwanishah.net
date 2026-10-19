@@ -35,18 +35,19 @@ for(const video of videos) {
   assert.ok(Math.max(video.width,video.height)>=3840);
 }
 const playback=JSON.parse(await readFile(resolve(root,'public/media/playback-manifest.json'),'utf8'));
-assert.deepEqual(playback.map(video=>video.name),videos.filter(video=>video.name.startsWith('home-')).map(video=>video.name));
+assert.deepEqual(playback.map(video=>video.name),videos.map(video=>video.name));
 for(const video of playback) {
   const original=videos.find(entry=>entry.name===video.name);
   const copy=await readFile(resolve(root,'public/media',video.file));
   assert.equal(video.sourceSha256,original.sha256,'Delivery copies must derive from the supplied master');
   assert.equal(createHash('sha256').update(copy).digest('hex'),video.sha256);
   assert.equal(copy.length,video.bytes);
-  assert.ok(video.bytes<original.bytes*.65,'Keep homepage transfers substantially smaller than the masters');
+  assert.ok(video.bytes<original.bytes*.65,'Keep animation transfers substantially smaller than the masters');
   assert.deepEqual([video.width,video.height],[original.width,original.height],'Keep the original 4K canvas');
-  assert.equal(video.avg_frame_rate,'30/1');
-  assert.equal(video.nb_frames,'1080');
-  assert.equal(video.duration,'36.000000');
+  const home=video.name.startsWith('home-');
+  assert.equal(video.avg_frame_rate,home?'30/1':'60/1');
+  assert.equal(video.nb_frames,home?'1080':'827');
+  assert.equal(video.duration,home?'36.000000':'13.783333');
   const atoms=[];
   for(let offset=0;offset<copy.length;) {
     const size=copy.readUInt32BE(offset);
@@ -85,4 +86,4 @@ for(const p of data.projects) {
   }
 }
 for(const file of ['src/app.js','src/animations.js','src/ascii.js','src/sparks.js','src/case-study.js','src/render.mjs','scripts/serve.mjs','scripts/build.mjs','scripts/prepare-topnotch.mjs','scripts/restore-media.mjs','scripts/split-media.mjs'])execFileSync(process.execPath,['--check',resolve(root,file)]);
-console.log(`Verified ${Object.keys(provenance).length} published assets, 6 original 4K videos, 3 smaller 4K delivery copies, content, previews, and JavaScript.`);
+console.log(`Verified ${Object.keys(provenance).length} published assets, 6 original 4K videos, 6 smaller 4K delivery copies, content, previews, and JavaScript.`);
