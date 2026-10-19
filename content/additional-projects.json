@@ -19,6 +19,12 @@
       2880,
       1800
     ],
-    "appStoreUrl": "https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12"
+    "appStoreUrl": "https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12",
+    "detailImage": "/assets/images/topnotch-final-linkedin.png",
+    "detailImageSha256": "c766731b699ee3a42e2aefc861eac84c77776163142ff99e6f171b829f2210c7",
+    "detailImageDimensions": [
+      2880,
+      1800
+    ]
   }
 ]

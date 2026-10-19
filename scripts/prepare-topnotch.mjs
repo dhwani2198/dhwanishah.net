@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 
 const root=resolve(import.meta.dirname,'..');
+const existingProjects=JSON.parse(await readFile(resolve(root,'content/additional-projects.json'),'utf8'));
 const previewSource='https://framerusercontent.com/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png?width=2880&height=1800';
 const response=await fetch(previewSource);
 if(!response.ok)throw new Error(`Could not retrieve TopNotch preview: ${response.status}`);
@@ -13,6 +14,7 @@ const preview='/assets/images/P1TsvBUS6FZmXAmd8JkmQQ9Et5k.png';
 await mkdir(resolve(root,'public/assets/images'),{recursive:true});
 await writeFile(resolve(root,'public',preview.slice(1)),image);
 const project={
+  ...existingProjects.find(project=>project.id==='topnotch'),
   id:'topnotch',title:'TopNotch',status:'live',
   lead:'Less clutter. More focus.',
   description:'TopNotch turns the space around your MacBook notch or iPhone dynamic island into a focused home for your day.',

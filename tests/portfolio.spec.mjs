@@ -420,9 +420,11 @@ test('TopNotch is Live with its published preview, App Store link, and project s
   await expect(page.locator('.project-teaser')).not.toContainText(/coming soon/i);
   await expect(page.locator('.project-teaser')).toContainText('Less clutter. More focus.');
   const teaserImage=page.locator('.teaser-media img');
-  expect(await teaserImage.evaluate(n=>getComputedStyle(n).objectPosition.split(' ').map(value=>Math.round(parseFloat(value)*10)/10))).toEqual([65.4,65.7]);
+  await expect(teaserImage).toHaveAttribute('src','/assets/images/topnotch-final-linkedin.png');
+  await teaserImage.evaluate(n=>n.decode());
+  expect(await teaserImage.evaluate(n=>[n.naturalWidth,n.naturalHeight])).toEqual([2880,1800]);
   const teaserBounds=await teaserImage.boundingBox();
-  expect(Math.abs(teaserBounds.width-teaserBounds.height)).toBeLessThan(1);
+  expect(teaserBounds.width/teaserBounds.height).toBeCloseTo(2880/1800,2);
   const storeUrl='https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12';
   const storeLink=page.getByRole('link',{name:'Download on the App Store'});
   await expect(storeLink).toBeVisible();

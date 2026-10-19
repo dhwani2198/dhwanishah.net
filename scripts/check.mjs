@@ -54,6 +54,11 @@ for(const p of data.projects) {
   assert.ok((await stat(resolve(root,'public',p.illustration.slice(1)))).size>0);
   assert.equal(p.preview,p.illustration,'Use the selected static project cover');
   assert.ok(!p.previewVideo,'Project previews must be static');
+  if(p.detailImage) {
+    const image=await readFile(resolve(root,'public',p.detailImage.slice(1)));
+    assert.equal(createHash('sha256').update(image).digest('hex'),p.detailImageSha256,'Keep the supplied detailed project image unchanged');
+    assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20)],p.detailImageDimensions);
+  }
 }
 for(const file of ['src/app.js','src/animations.js','src/ascii.js','src/sparks.js','src/case-study.js','src/render.mjs','scripts/serve.mjs','scripts/build.mjs','scripts/prepare-topnotch.mjs','scripts/restore-media.mjs','scripts/split-media.mjs'])execFileSync(process.execPath,['--check',resolve(root,file)]);
 console.log(`Verified ${Object.keys(provenance).length} published assets, 6 original 4K videos, content, previews, and JavaScript.`);

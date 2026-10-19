@@ -17,7 +17,7 @@ export function renderMedia(item, title, index = 0) {
 }
 
 export function renderArticle(project) {
-  if (!project.caseStudy) return `<article class="case-article project-teaser" data-article="${escape(project.id)}"><div class="teaser-layout"><div class="teaser-intro">${projectStatus(project)}<h1 id="case-title">${escape(project.title)}</h1><p class="teaser-lead">${escape(project.lead)}</p><p class="teaser-description">${escape(project.description)}</p><div class="preview-tags">${project.tags.map(tag=>`<span>${escape(tag)}</span>`).join('')}</div></div><figure class="teaser-media"><img src="${escape(project.preview)}" alt="${escape(project.title)} — published app preview" decoding="async"></figure></div><div class="teaser-footer"><p>Version 1.0 is now live on the App Store for Apple Silicon Macs</p>${project.appStoreUrl?`<a class="store-link" href="${escape(project.appStoreUrl)}" target="_blank" rel="noopener">Download on the App Store ${renderArrow()}</a>`:'<span class="store-status">App Store — coming soon</span>'}</div></article>`;
+  if (!project.caseStudy) return `<article class="case-article project-teaser" data-article="${escape(project.id)}"><div class="teaser-layout"><div class="teaser-intro">${projectStatus(project)}<h1 id="case-title">${escape(project.title)}</h1><p class="teaser-lead">${escape(project.lead)}</p><p class="teaser-description">${escape(project.description)}</p><div class="preview-tags">${project.tags.map(tag=>`<span>${escape(tag)}</span>`).join('')}</div></div><figure class="teaser-media"><img src="${escape(project.detailImage||project.preview)}" ${project.detailImageDimensions?`width="${project.detailImageDimensions[0]}" height="${project.detailImageDimensions[1]}"`:''} alt="${escape(project.title)} — app preview" decoding="async"></figure></div><div class="teaser-footer"><p>Version 1.0 is now live on the App Store for Apple Silicon Macs</p>${project.appStoreUrl?`<a class="store-link" href="${escape(project.appStoreUrl)}" target="_blank" rel="noopener">Download on the App Store ${renderArrow()}</a>`:'<span class="store-status">App Store — coming soon</span>'}</div></article>`;
   return `<article class="case-article" data-article="${project.id}"><h1 id="case-title" class="sr-only">${escape(project.title)}</h1><iframe class="published-case" title="${escape(project.title)} published case study" src="${escape(project.caseStudy)}"></iframe></article>`;
 }
 
@@ -47,7 +47,7 @@ function renderProjectDots(projects) {
   return `<nav class="phone-project-dots" aria-label="Project position">${projects.map((p,i)=>`<button type="button" data-phone-project-target="${p.id}" aria-label="Show ${escape(p.title)}, project ${i+1} of ${projects.length}" ${i===0?'aria-current="true"':''}><span aria-hidden="true"></span></button>`).join('')}</nav>`;
 }
 
-export const assetVersion='20261019-topnotch-spacing-25';
+export const assetVersion='20261019-topnotch-detail-26';
 function renderAnimation(name,initiallyActive) {
   const variants=[['phone','(max-width:759px) and (orientation:portrait)'],['tablet','(max-aspect-ratio:3/2)'],['desktop','']];
   const file=variant=>`${name}-${variant}`;
