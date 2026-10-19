@@ -19,7 +19,7 @@ const project={
   lead:'Less clutter. More focus.',
   description:'TopNotch turns the space around your MacBook notch into a focused home for your day.',
   detailDescription:'A macOS app that brings your meetings right to your Mac’s notch. With a quick view of your daily calendar and one-tap meeting access, TopNotch helps reduce context switching and makes staying on top of your schedule feel effortless.',
-  tags:['available on macOS','iOS version coming soon'],
+  tags:['Available on macOS','iOS version coming soon'],
   preview,illustration:preview,source:'https://dhwani.framer.ai/',previewSource,
   appStoreUrl:'https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12',
   previewSha256:createHash('sha256').update(image).digest('hex'),
