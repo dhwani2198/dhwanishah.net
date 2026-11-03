@@ -160,7 +160,7 @@ def about_data():
     return dict(sections=sections, portrait=asset(images[0]), alternatePortrait=asset(images[1]), artwork=[asset(src) for src in images[2:]],
         awards=['Archresource Acad Awards Program', 'Land Legend Place, ISOLA Mumbai MMR', 'National Level Design Competition'],
         featured=['ARGUS Investment Memorandum', 'Volume Zero Design Esquisse'], certifications=['Google UX Design Professional'],
-        links=dict(email='mailto:dhwani0321@gmail.com', linkedin='https://www.linkedin.com/in/dhwanishahh', instagram='https://www.instagram.com/dhwani.dwg/', blog='https://dhwani0321.substack.com/', resume='https://flowcv.com/resume/la3q6sc74157'))
+        links=dict(email='mailto:dhwani0321@gmail.com', linkedin='https://www.linkedin.com/in/dhwanishahh', instagram='https://www.instagram.com/dhwani.dwg/', blog='https://dhwani0321.substack.com/', resume='https://flowcv.com/resume/ed3vreb9gee6'))
 
 def generate():
     additions_path = ROOT / 'content/additional-projects.json'

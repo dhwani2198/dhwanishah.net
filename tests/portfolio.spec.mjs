@@ -124,7 +124,7 @@ test('published Blog and Resume links open separately',async({page})=>{
   await page.goto('/');
   const nav=page.getByRole('navigation',{name:'Main navigation'});
   await expect(nav.getByRole('link',{name:/Blog/})).toHaveAttribute('href','https://dhwani0321.substack.com/');
-  await expect(nav.getByRole('link',{name:/Resume/})).toHaveAttribute('href','https://flowcv.com/resume/la3q6sc74157');
+  await expect(nav.getByRole('link',{name:/Resume/})).toHaveAttribute('href','https://flowcv.com/resume/ed3vreb9gee6');
   await expect(nav.getByRole('link',{name:/Blog/})).toHaveAttribute('target','_blank');
   await expect(nav.getByRole('link',{name:/Resume/})).toHaveAttribute('target','_blank');
 });
