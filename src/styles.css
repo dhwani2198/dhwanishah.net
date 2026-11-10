@@ -124,6 +124,8 @@ dialog.is-expanded{inset:max(16px,env(safe-area-inset-top)) 16px max(16px,env(sa
 .teaser-description{font-size:14px;line-height:1.8;color:#a8a69d;max-width:36ch;margin:0 0 22px}
 .teaser-intro .preview-tags{display:flex}
 .teaser-intro .preview-tags span{font-size:8px}
+.teaser-intro .preview-tags a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+.teaser-intro .preview-tags a:hover{color:#fff}
 .teaser-media{margin:0;min-width:0}
 .teaser-media img{display:block;width:100%;height:auto;object-fit:contain;border-radius:8px}
 .teaser-footer{display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid #ffffff12;padding-top:24px;max-width:1100px;width:100%;margin:0 auto;font:10px var(--mono);color:#929187}

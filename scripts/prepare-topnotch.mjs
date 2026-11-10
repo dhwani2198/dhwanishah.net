@@ -22,6 +22,7 @@ const project={
   tags:['Available on macOS','iOS version available for beta access on Test Flight. Email for early access'],
   preview,illustration:preview,source:'https://dhwani.framer.ai/',previewSource,
   appStoreUrl:'https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12',
+  betaAccessEmail:'dhwani2198@gmail.com',
   previewSha256:createHash('sha256').update(image).digest('hex'),
   previewDimensions:[image.readUInt32BE(16),image.readUInt32BE(20)],
 };
