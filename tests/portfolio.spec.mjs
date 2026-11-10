@@ -426,7 +426,7 @@ test('TopNotch is Live with its published preview, App Store link, and project s
   const teaserBounds=await teaserImage.boundingBox();
   expect(teaserBounds.width/teaserBounds.height).toBeCloseTo(2880/1800,2);
   const storeUrl='https://apps.apple.com/us/app/topnotch-meetings-focus/id6814712914?mt=12';
-  const storeLink=page.getByRole('link',{name:'Download on the App Store'});
+  const storeLink=page.getByRole('link',{name:'Download on the Mac App Store'});
   await expect(storeLink).toBeVisible();
   await expect(storeLink).toHaveAttribute('href',storeUrl);
   await expect(storeLink).toHaveAttribute('target','_blank');
