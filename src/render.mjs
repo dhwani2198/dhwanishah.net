@@ -24,8 +24,16 @@ function renderTeaserTags(project) {
   }).join('');
 }
 
+function renderTeaserMedia(project) {
+  const first={src:project.detailImage||project.preview,dimensions:project.detailImageDimensions,alt:`${project.title} — ${project.additionalDetailImages?.length?'macOS app preview':'app preview'}`};
+  const slides=[first,...(project.additionalDetailImages||[])];
+  const image=slide=>`<img src="${escape(slide.src)}" ${slide.dimensions?`width="${slide.dimensions[0]}" height="${slide.dimensions[1]}"`:''} alt="${escape(slide.alt)}" decoding="async">`;
+  if(slides.length===1)return `<figure class="teaser-media">${image(first)}</figure>`;
+  return `<figure class="teaser-media teaser-carousel" data-carousel role="region" aria-roledescription="carousel" aria-label="${escape(project.title)} app previews" style="aspect-ratio:${first.dimensions[0]}/${first.dimensions[1]}"><div class="teaser-carousel-track">${slides.map((slide,index)=>`<div class="teaser-slide" role="group" aria-roledescription="slide" aria-label="${index+1} of ${slides.length}" aria-hidden="${index!==0}">${image(slide)}</div>`).join('')}</div><div class="teaser-carousel-controls"><div class="teaser-carousel-dots" aria-label="Choose an app preview">${slides.map((slide,index)=>`<button type="button" data-carousel-slide="${index}" aria-label="Show ${escape(slide.alt)}" ${index===0?'aria-current="true"':''}><span></span></button>`).join('')}</div><button type="button" class="teaser-carousel-toggle" aria-label="Pause image rotation"><span aria-hidden="true">Ⅱ</span></button></div></figure>`;
+}
+
 export function renderArticle(project) {
-  if (!project.caseStudy) return `<article class="case-article project-teaser" data-article="${escape(project.id)}"><div class="teaser-layout"><div class="teaser-intro">${projectStatus(project)}<h1 id="case-title">${escape(project.title)}</h1><p class="teaser-lead">${escape(project.lead)}</p><p class="teaser-description">${escape(project.detailDescription||project.description)}</p><div class="preview-tags">${renderTeaserTags(project)}</div></div><figure class="teaser-media"><img src="${escape(project.detailImage||project.preview)}" ${project.detailImageDimensions?`width="${project.detailImageDimensions[0]}" height="${project.detailImageDimensions[1]}"`:''} alt="${escape(project.title)} — app preview" decoding="async"></figure></div><div class="teaser-footer"><p>Version 1.0 is now live on the App Store for Apple Silicon Macs</p><div class="teaser-actions"><span class="store-status">Coming soon on the iOS App Store</span>${project.appStoreUrl?`<a class="store-link" href="${escape(project.appStoreUrl)}" target="_blank" rel="noopener">Download on the Mac App Store ${renderArrow()}</a>`:'<span class="store-status">App Store — coming soon</span>'}</div></div></article>`;
+  if (!project.caseStudy) return `<article class="case-article project-teaser" data-article="${escape(project.id)}"><div class="teaser-layout"><div class="teaser-intro">${projectStatus(project)}<h1 id="case-title">${escape(project.title)}</h1><p class="teaser-lead">${escape(project.lead)}</p><p class="teaser-description">${escape(project.detailDescription||project.description)}</p><div class="preview-tags">${renderTeaserTags(project)}</div></div>${renderTeaserMedia(project)}</div><div class="teaser-footer"><p>Version 1.0 is now live on the App Store for Apple Silicon Macs</p><div class="teaser-actions"><span class="store-status">Coming soon on the iOS App Store</span>${project.appStoreUrl?`<a class="store-link" href="${escape(project.appStoreUrl)}" target="_blank" rel="noopener">Download on the Mac App Store ${renderArrow()}</a>`:'<span class="store-status">App Store — coming soon</span>'}</div></div></article>`;
   return `<article class="case-article" data-article="${project.id}"><h1 id="case-title" class="sr-only">${escape(project.title)}</h1><iframe class="published-case" title="${escape(project.title)} published case study" src="${escape(project.caseStudy)}"></iframe></article>`;
 }
 
@@ -55,7 +63,7 @@ function renderProjectDots(projects) {
   return `<nav class="phone-project-dots" aria-label="Project position">${projects.map((p,i)=>`<button type="button" data-phone-project-target="${p.id}" aria-label="Show ${escape(p.title)}, project ${i+1} of ${projects.length}" ${i===0?'aria-current="true"':''}><span aria-hidden="true"></span></button>`).join('')}</nav>`;
 }
 
-export const assetVersion='20261110-topnotch-alignment-42';
+export const assetVersion='20261110-topnotch-carousel-43';
 function renderAnimation(name,initiallyActive) {
   const variants=[['phone','(max-width:759px) and (orientation:portrait)'],['tablet','(max-aspect-ratio:3/2)'],['desktop','']];
   const file=variant=>`${name}-${variant}-playback`;

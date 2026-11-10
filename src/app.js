@@ -1,7 +1,8 @@
-import { renderArticle, projectStatusLabel, assetVersion } from './render.mjs?v=20261110-topnotch-alignment-42';
+import { renderArticle, projectStatusLabel, assetVersion } from './render.mjs?v=20261110-topnotch-carousel-43';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261110-topnotch-alignment-42';
+import { attachCarousel } from './carousel.js?v=20261110-topnotch-carousel-43';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261110-topnotch-carousel-43';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
@@ -111,6 +112,7 @@ animateGreeting(document.querySelector('.hello-text'));
 let selectedProject = null;
 let currentView = null;
 let currentArticle = viewerContent.querySelector('[data-article]')?.dataset.article;
+let disposeCarousel;
 let lineFrame;
 let expectedDialogCloses=0;
 
@@ -232,6 +234,8 @@ function renderLocation({focus=false}={}) {
     phoneProjectIndex=projects.indexOf(project);
     selectProject(project.id);
     if(currentArticle!==project.id) {
+      disposeCarousel?.();
+      disposeCarousel=null;
       viewerContent.querySelectorAll('video').forEach(video=>video.pause());
       viewerContent.innerHTML=renderArticle(project);
       viewerContent.scrollTop=0;
@@ -246,8 +250,11 @@ function renderLocation({focus=false}={}) {
       dialog.showModal();
       selectedTab.autofocus=false;
     }
+    if(!disposeCarousel)disposeCarousel=attachCarousel(viewerContent.querySelector('[data-carousel]'));
     if(focus)dialog.querySelector(`[data-project="${project.id}"]`).focus({preventScroll:true});
   } else {
+    disposeCarousel?.();
+    disposeCarousel=null;
     const wasOpen=dialog.open;
     if(wasOpen) {
       viewerContent.querySelectorAll('video').forEach(video=>video.pause());

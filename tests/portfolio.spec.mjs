@@ -393,6 +393,56 @@ test('reduced motion suppresses automatic cursor trails',async({page})=> {
 });
 
 
+test('TopNotch carousel rotates every five seconds and resets when reopened',async({page})=>{
+  await page.clock.install();
+  await page.goto('/topnotch');
+  const carousel=page.locator('[data-carousel]');
+  await expect(carousel).toBeVisible();
+  const images=carousel.locator('img');
+  await expect(images).toHaveCount(2);
+  for(const image of await images.all()) {
+    await image.evaluate(n=>n.decode());
+    expect(await image.evaluate(n=>[n.naturalWidth,n.naturalHeight])).toEqual([2880,1800]);
+  }
+  await expect(images.nth(1)).toHaveAttribute('src','/assets/images/topnotch-ios-linkedin.jpg');
+  const mac=carousel.getByRole('button',{name:'Show TopNotch — macOS app preview'});
+  const ios=carousel.getByRole('button',{name:'Show TopNotch — iOS app demo'});
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await mac.click({force:true});
+  await expect(carousel.locator('.teaser-carousel-track')).toHaveAttribute('style','transform: translateX(0%);');
+  const frame=await carousel.boundingBox();
+  const viewer=await page.locator('#project-viewer').boundingBox();
+  await page.clock.runFor(4999);
+  await expect(mac).toHaveAttribute('aria-current','true');
+  await page.clock.runFor(1);
+  await expect(ios).toHaveAttribute('aria-current','true');
+  await expect(carousel.locator('.teaser-slide').nth(1)).toHaveAttribute('aria-hidden','false');
+  expect(await carousel.boundingBox()).toEqual(frame);
+  expect(await page.locator('#project-viewer').boundingBox()).toEqual(viewer);
+  await page.clock.runFor(5000);
+  await expect(mac).toHaveAttribute('aria-current','true');
+  await carousel.getByRole('button',{name:'Pause image rotation'}).click({force:true});
+  await page.clock.runFor(10000);
+  await expect(mac).toHaveAttribute('aria-current','true');
+  await ios.click({force:true});
+  await expect(ios).toHaveAttribute('aria-current','true');
+  await carousel.getByRole('button',{name:'Resume image rotation'}).click({force:true});
+  await page.clock.runFor(5000);
+  await expect(mac).toHaveAttribute('aria-current','true');
+  await page.locator('.project-tabs [data-project="tally"]').click({force:true});
+  await expect(carousel).toHaveCount(0);
+  await page.clock.runFor(5000);
+  await page.locator('.project-tabs [data-project="topnotch"]').click({force:true});
+  await expect(mac).toHaveAttribute('aria-current','true');
+  await page.getByRole('button',{name:'Close project viewer'}).click({force:true});
+  await expect(page.locator('#project-viewer')).not.toBeVisible();
+  await page.goBack();
+  await expect(carousel).toBeVisible();
+  await expect(mac).toHaveAttribute('aria-current','true');
+  await page.clock.runFor(5000);
+  await expect(ios).toHaveAttribute('aria-current','true');
+});
+
 test('TopNotch is Live with its published preview, App Store link, and project switching',async({page,isMobile,browserName})=>{
   await page.goto('/#projects');
   const preview=await projectPreview(page,'topnotch',{hover:!isMobile});
@@ -419,7 +469,7 @@ test('TopNotch is Live with its published preview, App Store link, and project s
   await expect(page.locator('.project-tabs [data-project="topnotch"] .project-status')).toHaveText('Live');
   await expect(page.locator('.project-teaser')).not.toContainText(/case study coming soon/i);
   await expect(page.locator('.project-teaser')).toContainText('Less clutter. More focus.');
-  const teaserImage=page.locator('.teaser-media img');
+  const teaserImage=page.locator('.teaser-media img').first();
   await expect(teaserImage).toHaveAttribute('src','/assets/images/topnotch-final-linkedin.png');
   await teaserImage.evaluate(n=>n.decode());
   expect(await teaserImage.evaluate(n=>[n.naturalWidth,n.naturalHeight])).toEqual([2880,1800]);

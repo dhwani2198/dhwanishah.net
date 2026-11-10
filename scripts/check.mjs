@@ -84,6 +84,11 @@ for(const p of data.projects) {
     assert.equal(createHash('sha256').update(image).digest('hex'),p.detailImageSha256,'Keep the supplied detailed project image unchanged');
     assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20)],p.detailImageDimensions);
   }
+  for(const slide of p.additionalDetailImages||[]) {
+    const image=await readFile(resolve(root,'public',slide.src.slice(1)));
+    assert.equal(createHash('sha256').update(image).digest('hex'),slide.sha256,'Keep carousel images byte-identical to the supplied originals');
+    assert.deepEqual(slide.dimensions,p.detailImageDimensions,'Keep the carousel frame aligned without changing image proportions');
+  }
 }
-for(const file of ['src/app.js','src/animations.js','src/ascii.js','src/sparks.js','src/case-study.js','src/render.mjs','scripts/serve.mjs','scripts/build.mjs','scripts/prepare-topnotch.mjs','scripts/restore-media.mjs','scripts/split-media.mjs'])execFileSync(process.execPath,['--check',resolve(root,file)]);
+for(const file of ['src/app.js','src/carousel.js','src/animations.js','src/ascii.js','src/sparks.js','src/case-study.js','src/render.mjs','scripts/serve.mjs','scripts/build.mjs','scripts/prepare-topnotch.mjs','scripts/restore-media.mjs','scripts/split-media.mjs'])execFileSync(process.execPath,['--check',resolve(root,file)]);
 console.log(`Verified ${Object.keys(provenance).length} published assets, 6 original 4K videos, 6 smaller 4K delivery copies, content, previews, and JavaScript.`);

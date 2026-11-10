@@ -26,6 +26,17 @@
       2880,
       1800
     ],
-    "detailDescription": "A macOS app that brings your meetings right to your Mac’s notch. With a quick view of your daily calendar and one-tap meeting access, TopNotch helps reduce context switching and makes staying on top of your schedule feel effortless."
+    "detailDescription": "A macOS app that brings your meetings right to your Mac’s notch. With a quick view of your daily calendar and one-tap meeting access, TopNotch helps reduce context switching and makes staying on top of your schedule feel effortless.",
+    "additionalDetailImages": [
+      {
+        "src": "/assets/images/topnotch-ios-linkedin.jpg",
+        "alt": "TopNotch — iOS app demo",
+        "dimensions": [
+          2880,
+          1800
+        ],
+        "sha256": "b8addc0754d895b581aa0c56aee747b133cb877ef1c0c83718c3ba1bf3bdf451"
+      }
+    ]
   }
 ]
