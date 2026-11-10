@@ -78,6 +78,8 @@ body[data-view=about][data-about-story=true] .about-content{padding-bottom:48px}
 .preview-description,.phone-card-copy p{font-size:11px;line-height:1.7;color:#a0a09b;margin:12px 0 16px;max-width:33ch}
 .preview-tags{display:flex;flex-wrap:wrap;gap:5px}
 .preview-tags span{font:8px var(--mono);border:1px solid #2d2d33;border-radius:20px;padding:4px 7px;color:#9a9a93}
+:is(.preview-panel[data-preview-project=topnotch],.phone-project-panel[data-phone-project=topnotch],.project-teaser[data-article=topnotch]) .preview-tags{flex-direction:column;align-items:flex-start}
+:is(.preview-panel[data-preview-project=topnotch],.phone-project-panel[data-phone-project=topnotch],.project-teaser[data-article=topnotch]) .preview-tags span{max-width:100%;line-height:1.5}
 /* Reserve equal copy rows so longer titles, descriptions and tags cannot
    change card size as the selected project changes. */
 .preview-heading,.phone-card-title{min-height:22px}
