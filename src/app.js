@@ -1,8 +1,8 @@
-import { renderArticle, projectStatusLabel, assetVersion } from './render.mjs?v=20261110-topnotch-dots-44';
+import { renderArticle, projectStatusLabel, assetVersion } from './render.mjs?v=20261110-about-artwork-45';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { attachCarousel } from './carousel.js?v=20261110-topnotch-dots-44';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261110-topnotch-dots-44';
+import { attachCarousel } from './carousel.js?v=20261110-about-artwork-45';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261110-about-artwork-45';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
