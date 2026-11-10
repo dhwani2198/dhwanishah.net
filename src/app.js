@@ -1,7 +1,7 @@
-import { renderArticle, projectStatusLabel, assetVersion } from './render.mjs?v=20261110-topnotch-image-41';
+import { renderArticle, projectStatusLabel, assetVersion } from './render.mjs?v=20261110-topnotch-alignment-42';
 import { animateGreeting } from './ascii.js';
 import { attachPointerSparks } from './sparks.js';
-import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261110-topnotch-image-41';
+import { animations, animationIsActive, updateAnimationPlayback } from './animations.js?v=20261110-topnotch-alignment-42';
 
 const phoneLanding = matchMedia('(pointer:coarse) and (max-width:759px), (pointer:coarse) and (max-width:1050px) and (max-height:500px)');
 document.documentElement.dataset.phoneLanding=String(phoneLanding.matches&&document.body.dataset.view==='home');
