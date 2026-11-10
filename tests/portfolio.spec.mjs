@@ -421,12 +421,8 @@ test('TopNotch carousel rotates every five seconds and resets when reopened',asy
   expect(await page.locator('#project-viewer').boundingBox()).toEqual(viewer);
   await page.clock.runFor(5000);
   await expect(mac).toHaveAttribute('aria-current','true');
-  await carousel.getByRole('button',{name:'Pause image rotation'}).click({force:true});
-  await page.clock.runFor(10000);
-  await expect(mac).toHaveAttribute('aria-current','true');
   await ios.click({force:true});
   await expect(ios).toHaveAttribute('aria-current','true');
-  await carousel.getByRole('button',{name:'Resume image rotation'}).click({force:true});
   await page.clock.runFor(5000);
   await expect(mac).toHaveAttribute('aria-current','true');
   await page.locator('.project-tabs [data-project="tally"]').click({force:true});

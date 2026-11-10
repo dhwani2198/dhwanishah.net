@@ -29,7 +29,7 @@ function renderTeaserMedia(project) {
   const slides=[first,...(project.additionalDetailImages||[])];
   const image=slide=>`<img src="${escape(slide.src)}" ${slide.dimensions?`width="${slide.dimensions[0]}" height="${slide.dimensions[1]}"`:''} alt="${escape(slide.alt)}" decoding="async">`;
   if(slides.length===1)return `<figure class="teaser-media">${image(first)}</figure>`;
-  return `<figure class="teaser-media teaser-carousel" data-carousel role="region" aria-roledescription="carousel" aria-label="${escape(project.title)} app previews" style="aspect-ratio:${first.dimensions[0]}/${first.dimensions[1]}"><div class="teaser-carousel-track">${slides.map((slide,index)=>`<div class="teaser-slide" role="group" aria-roledescription="slide" aria-label="${index+1} of ${slides.length}" aria-hidden="${index!==0}">${image(slide)}</div>`).join('')}</div><div class="teaser-carousel-controls"><div class="teaser-carousel-dots" aria-label="Choose an app preview">${slides.map((slide,index)=>`<button type="button" data-carousel-slide="${index}" aria-label="Show ${escape(slide.alt)}" ${index===0?'aria-current="true"':''}><span></span></button>`).join('')}</div><button type="button" class="teaser-carousel-toggle" aria-label="Pause image rotation"><span aria-hidden="true">Ⅱ</span></button></div></figure>`;
+  return `<figure class="teaser-media teaser-carousel" data-carousel role="region" aria-roledescription="carousel" aria-label="${escape(project.title)} app previews" style="aspect-ratio:${first.dimensions[0]}/${first.dimensions[1]}"><div class="teaser-carousel-track">${slides.map((slide,index)=>`<div class="teaser-slide" role="group" aria-roledescription="slide" aria-label="${index+1} of ${slides.length}" aria-hidden="${index!==0}">${image(slide)}</div>`).join('')}</div><div class="teaser-carousel-controls"><div class="teaser-carousel-dots" aria-label="Choose an app preview">${slides.map((slide,index)=>`<button type="button" data-carousel-slide="${index}" aria-label="Show ${escape(slide.alt)}" ${index===0?'aria-current="true"':''}><span></span></button>`).join('')}</div></div></figure>`;
 }
 
 export function renderArticle(project) {
@@ -63,7 +63,7 @@ function renderProjectDots(projects) {
   return `<nav class="phone-project-dots" aria-label="Project position">${projects.map((p,i)=>`<button type="button" data-phone-project-target="${p.id}" aria-label="Show ${escape(p.title)}, project ${i+1} of ${projects.length}" ${i===0?'aria-current="true"':''}><span aria-hidden="true"></span></button>`).join('')}</nav>`;
 }
 
-export const assetVersion='20261110-topnotch-carousel-43';
+export const assetVersion='20261110-topnotch-dots-44';
 function renderAnimation(name,initiallyActive) {
   const variants=[['phone','(max-width:759px) and (orientation:portrait)'],['tablet','(max-aspect-ratio:3/2)'],['desktop','']];
   const file=variant=>`${name}-${variant}-playback`;

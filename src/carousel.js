@@ -4,12 +4,11 @@ export function attachCarousel(carousel) {
   const track=carousel.querySelector('.teaser-carousel-track');
   const slides=[...carousel.querySelectorAll('.teaser-slide')];
   const dots=[...carousel.querySelectorAll('[data-carousel-slide]')];
-  const toggle=carousel.querySelector('.teaser-carousel-toggle');
-  let index=0,timer,paused=false,disposed=false;
+  let index=0,timer,disposed=false;
 
   function schedule() {
     clearTimeout(timer);
-    if(!disposed&&!paused&&!document.hidden)timer=setTimeout(()=>show((index+1)%slides.length),5000);
+    if(!disposed&&!document.hidden)timer=setTimeout(()=>show((index+1)%slides.length),5000);
   }
   async function show(next) {
     // Keep the current image visible until the next original has decoded.
@@ -28,12 +27,6 @@ export function attachCarousel(carousel) {
   function onClick(event) {
     const dot=event.target.closest('[data-carousel-slide]');
     if(dot){clearTimeout(timer);show(Number(dot.dataset.carouselSlide));}
-    else if(event.target.closest('.teaser-carousel-toggle')) {
-      paused=!paused;
-      toggle.setAttribute('aria-label',`${paused?'Resume':'Pause'} image rotation`);
-      toggle.firstElementChild.textContent=paused?'▶':'Ⅱ';
-      schedule();
-    }
   }
   carousel.addEventListener('click',onClick);
   document.addEventListener('visibilitychange',schedule);
